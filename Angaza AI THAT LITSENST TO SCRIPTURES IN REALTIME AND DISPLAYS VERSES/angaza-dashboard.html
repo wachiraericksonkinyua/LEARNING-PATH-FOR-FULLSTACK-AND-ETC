@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Angaza — Church AI Voice Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --deep: #0D1B2A;
+    --deep2: #112233;
+    --panel: #0F2035;
+    --panel2: #132840;
+    --accent: #4A90C4;
+    --accent2: #2ECC8E;
+    --text: #E8E0D0;
+    --muted: #8AA0B8;
+    --border: rgba(201,168,76,0.2);
+    --glow: rgba(201,168,76,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(74,144,196,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 100%, rgba(201,168,76,0.06) 0%, transparent 60%),
+      var(--deep);
+  }
+  .cross-bg {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 800px; height: 800px; opacity: 0.015; z-index: 0;
+    background:
+      linear-gradient(rgba(201,168,76,1) 0%, rgba(201,168,76,1) 100%) center/6px 100% no-repeat,
+      linear-gradient(rgba(201,168,76,1) 0%, rgba(201,168,76,1) 100%) center/100% 6px no-repeat;
+  }
+
+  /* ── LAYOUT ── */
+  .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 48px 0 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+    animation: fadeDown 0.8s ease both;
+  }
+  .logo-row {
+    display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 12px;
+  }
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 0 30px rgba(201,168,76,0.4);
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100% { box-shadow: 0 0 30px rgba(201,168,76,0.4); }
+    50% { box-shadow: 0 0 50px rgba(201,168,76,0.7); }
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .tagline {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .verse-banner {
+    margin-top: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: rgba(201,168,76,0.7);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 40px;
+    background: var(--panel); border-radius: 12px; padding: 6px;
+    animation: fadeUp 0.6s 0.2s ease both;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 1; min-width: 120px;
+    padding: 10px 16px; border: none; border-radius: 8px;
+    background: transparent; color: var(--muted);
+    font-family: 'Nunito', sans-serif; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: all 0.25s; white-space: nowrap;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.1));
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.3);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); background: rgba(255,255,255,0.04); }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeUp 0.4s ease both; }
+  .panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; font-weight: 600;
+    color: var(--gold); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title .icon { font-size: 1.2rem; }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-grid {
+    display: flex; flex-direction: column; gap: 0;
+    position: relative;
+  }
+  .arch-layer {
+    display: flex; gap: 12px; padding: 20px 0; position: relative;
+  }
+  .arch-layer::after {
+    content: '↓'; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+    color: var(--gold); font-size: 1.4rem; z-index: 2;
+  }
+  .arch-layer:last-child::after { display: none; }
+  .arch-node {
+    flex: 1; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; text-align: center;
+    transition: all 0.25s; cursor: default;
+  }
+  .arch-node:hover {
+    border-color: var(--gold); transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .arch-node .node-label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .arch-node .node-name {
+    font-weight: 700; font-size: 0.88rem; color: var(--text);
+  }
+  .arch-node .node-tech {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    color: var(--accent); margin-top: 4px;
+  }
+  .arch-node.highlight { border-color: rgba(201,168,76,0.5); background: rgba(201,168,76,0.06); }
+  .arch-node.highlight .node-name { color: var(--gold); }
+
+  /* ── ROADMAP ── */
+  .roadmap { display: grid; gap: 16px; }
+  .phase {
+    background: var(--panel2); border-radius: 14px;
+    border-left: 4px solid var(--muted);
+    padding: 20px 24px; transition: all 0.3s; cursor: pointer;
+  }
+  .phase:hover { transform: translateX(4px); }
+  .phase.p1 { border-color: var(--accent2); }
+  .phase.p2 { border-color: var(--accent); }
+  .phase.p3 { border-color: var(--gold); }
+  .phase.p4 { border-color: #E85D75; }
+  .phase-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .phase-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem; font-weight: 600; margin-bottom: 4px;
+  }
+  .phase.p1 .phase-title { color: var(--accent2); }
+  .phase.p2 .phase-title { color: var(--accent); }
+  .phase.p3 .phase-title { color: var(--gold); }
+  .phase.p4 .phase-title { color: #E85D75; }
+  .phase-duration {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    background: rgba(255,255,255,0.06); border-radius: 20px; padding: 4px 10px;
+    color: var(--muted); white-space: nowrap;
+  }
+  .phase-desc { color: var(--muted); font-size: 0.86rem; margin-bottom: 12px; }
+  .phase-tasks { display: none; }
+  .phase.open .phase-tasks { display: block; }
+  .phase-tasks ul { list-style: none; margin-top: 12px; }
+  .phase-tasks li {
+    padding: 6px 0 6px 20px; position: relative;
+    font-size: 0.86rem; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .phase-tasks li::before { content: '◆'; position: absolute; left: 0; font-size: 0.5rem; top: 10px; }
+  .phase.p1 li::before { color: var(--accent2); }
+  .phase.p2 li::before { color: var(--accent); }
+  .phase.p3 li::before { color: var(--gold); }
+  .phase.p4 li::before { color: #E85D75; }
+
+  /* ── CODE VIEWER ── */
+  .code-selector { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .code-btn {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.75rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .code-btn.active {
+    background: rgba(201,168,76,0.1); color: var(--gold); border-color: rgba(201,168,76,0.4);
+  }
+  .code-btn:hover:not(.active) { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .code-block {
+    background: #080F18; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 24px;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    line-height: 1.7; overflow-x: auto; display: none;
+    color: #A8C0D8;
+    max-height: 480px; overflow-y: auto;
+  }
+  .code-block.active { display: block; }
+  .code-block .kw { color: #C792EA; }
+  .code-block .fn { color: #82AAFF; }
+  .code-block .st { color: #C3E88D; }
+  .code-block .cm { color: #546E7A; font-style: italic; }
+  .code-block .cn { color: var(--gold-light); }
+  .code-block .num { color: #F78C6C; }
+
+  /* ── STACK TABLE ── */
+  .stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .stack-item {
+    background: var(--panel2); border-radius: 10px; padding: 16px;
+    border: 1px solid transparent; transition: all 0.25s;
+  }
+  .stack-item:hover { border-color: var(--border); }
+  .stack-cat { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+  .stack-name { font-weight: 700; font-size: 0.92rem; color: var(--text); margin-bottom: 2px; }
+  .stack-alt { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--accent); }
+  .free-badge {
+    display: inline-block; margin-top: 6px;
+    background: rgba(46,204,142,0.1); color: var(--accent2);
+    border: 1px solid rgba(46,204,142,0.3); border-radius: 20px;
+    padding: 2px 8px; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.04em;
+  }
+
+  /* ── LIVE DEMO ── */
+  .demo-area {
+    background: var(--panel2); border-radius: 14px; padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .demo-title {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.1rem;
+    color: var(--gold); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .demo-input {
+    flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .demo-input:focus { border-color: rgba(201,168,76,0.5); }
+  .demo-input::placeholder { color: var(--muted); }
+  .btn-primary {
+    padding: 12px 24px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, var(--gold), #A67C35);
+    color: #0D1B2A; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.88rem;
+    cursor: pointer; transition: all 0.25s; white-space: nowrap;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .emotion-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 0.78rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chip:hover, .chip.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+  .result-box {
+    background: rgba(0,0,0,0.3); border-radius: 12px; padding: 20px;
+    border: 1px solid rgba(201,168,76,0.15); display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+  .result-box.show { display: block; }
+  .verse-ref {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.4rem;
+    color: var(--gold); margin-bottom: 8px;
+  }
+  .verse-text {
+    font-family: 'Cormorant Garamond', serif; font-size: 1.05rem;
+    font-style: italic; color: var(--text); line-height: 1.7; margin-bottom: 16px;
+    border-left: 2px solid var(--gold); padding-left: 16px;
+  }
+  .devotional { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+  .devotional strong { color: var(--accent2); }
+  .loading { text-align: center; padding: 24px; color: var(--muted); font-style: italic; }
+  .loading::after {
+    content: '...'; animation: dots 1.5s infinite;
+  }
+  @keyframes dots {
+    0%,20% { content: '.'; }
+    40%,60% { content: '..'; }
+    80%,100% { content: '...'; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+
+  /* ── MISC ── */
+  .section-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } .arch-layer { flex-direction: column; } }
+</style>
+</head>
+<body>
+<div class="bg-canvas"></div>
+<div class="cross-bg"></div>
+
+<div class="container">
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">✦</div>
+      <h1>Angaza</h1>
+      <div class="logo-icon">✦</div>
+    </div>
+    <div class="tagline">Church-Oriented AI Voice Assistant · Kenya</div>
+    <div class="verse-banner">"Your word is a lamp to my feet and a light to my path." — Psalm 119:105</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="showTab('architecture')">Architecture</button>
+    <button class="tab-btn" onclick="showTab('roadmap')">Roadmap</button>
+    <button class="tab-btn" onclick="showTab('code')">Code</button>
+    <button class="tab-btn" onclick="showTab('stack')">Tech Stack</button>
+    <button class="tab-btn" onclick="showTab('demo')">Live Demo</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="tab-overview">
+    <div class="section-label">Project Overview</div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><span class="icon">🕊️</span> Mission</div>
+        <p style="color:var(--muted);font-size:0.9rem;line-height:1.7">
+          Angaza (Swahili: <em style="color:var(--gold)">to illuminate</em>) is a spiritually grounded AI voice assistant built for Kenyan churches. It helps congregants engage with scripture, manage prayer requests, access church events, and grow spiritually — all through natural voice interaction in English and Swahili.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">⚡</span> Core Capabilities</div>
+        <ul style="list-style:none;font-size:0.86rem;color:var(--muted)">
+          <li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">📖 Emotion-aware scripture retrieval (RAG)</li>
+          <li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">🎙️ Voice-first (Whisper ASR + Neural TTS)</li>
+          <li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">🙏 Prayer request recording & routing</li>
+          <li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">📅 Church event scheduling integration</li>
+          <li style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">💸 Voice-guided digital giving</li>
+          <li style="padding:5px 0">🇰🇪 English + Swahili bilingual support</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🛡️</span> Safety & Ethics Framework</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:4px">
+        <div style="background:rgba(46,204,142,0.06);border:1px solid rgba(46,204,142,0.2);border-radius:10px;padding:14px">
+          <div style="color:var(--accent2);font-weight:700;font-size:0.82rem;margin-bottom:4px">✅ ALWAYS</div>
+          <div style="color:var(--muted);font-size:0.8rem">Ground answers in scripture • Remain warm and gentle • Respect all denominations • Support in both languages</div>
+        </div>
+        <div style="background:rgba(232,93,117,0.06);border:1px solid rgba(232,93,117,0.2);border-radius:10px;padding:14px">
+          <div style="color:#E85D75;font-weight:700;font-size:0.82rem;margin-bottom:4px">🚫 NEVER</div>
+          <div style="color:var(--muted);font-size:0.8rem">Political debates • Inter-church disputes • Complex pastoral counseling • Controversial theological doctrines</div>
+        </div>
+        <div style="background:rgba(74,144,196,0.06);border:1px solid rgba(74,144,196,0.2);border-radius:10px;padding:14px">
+          <div style="color:var(--accent);font-weight:700;font-size:0.82rem;margin-bottom:4px">🔄 REDIRECT</div>
+          <div style="color:var(--muted);font-size:0.8rem">Deep pastoral needs → "Consult your Pastor" • Medical concerns → Professionals • Legal issues → Qualified advisors</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="panel" id="tab-architecture">
+    <div class="section-label">System Architecture — Voice Data Flow</div>
+    <div class="card">
+      <div class="arch-grid">
+        <div class="arch-layer">
+          <div class="arch-node highlight">
+            <div class="node-label">User Interface</div>
+            <div class="node-name">🎙️ Voice / Text Input</div>
+            <div class="node-tech">Web App · Mobile · Smart Speaker</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node">
+            <div class="node-label">ASR Layer</div>
+            <div class="node-name">Speech → Text</div>
+            <div class="node-tech">Groq Whisper API (free) / Local Whisper</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Language Detection</div>
+            <div class="node-name">EN / SW Router</div>
+            <div class="node-tech">langdetect · fasttext</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node">
+            <div class="node-label">Intent Classification</div>
+            <div class="node-name">Query Router</div>
+            <div class="node-tech">Scripture · Events · Prayer · Giving</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Emotion Detection</div>
+            <div class="node-name">Emotional State</div>
+            <div class="node-tech">Groq LLaMA3 · HuggingFace classifier</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Safety Filter</div>
+            <div class="node-name">Guardrails</div>
+            <div class="node-tech">Topic blocklist · Pastor redirect</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node highlight">
+            <div class="node-label">RAG Engine</div>
+            <div class="node-name">📖 Scripture Retrieval</div>
+            <div class="node-tech">FAISS + all-MiniLM-L6-v2</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Church Data</div>
+            <div class="node-name">📅 Events / Prayer</div>
+            <div class="node-tech">PostgreSQL · Google Calendar API</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Memory Store</div>
+            <div class="node-name">User Context</div>
+            <div class="node-tech">Redis · Session history</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node highlight">
+            <div class="node-label">LLM Generation</div>
+            <div class="node-name">🤖 Groq LLaMA3</div>
+            <div class="node-tech">llama3-8b-8192 · Free 14,400 req/day</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node">
+            <div class="node-label">TTS Layer</div>
+            <div class="node-name">Text → Speech</div>
+            <div class="node-tech">Edge TTS (sw-KE-ZuriNeural) · gTTS</div>
+          </div>
+          <div class="arch-node">
+            <div class="node-label">Response Format</div>
+            <div class="node-name">Audio + Text</div>
+            <div class="node-tech">MP3/WebM Base64 · JSON payload</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-node highlight">
+            <div class="node-label">Output</div>
+            <div class="node-name">🔊 Voice Response</div>
+            <div class="node-tech">Warm · Reverent · Bilingual</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">🔌</span> API Endpoints</div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.78rem;line-height:2">
+        <div style="display:grid;grid-template-columns:auto auto 1fr;gap:0 12px">
+          <span style="color:#C3E88D">POST</span><span style="color:var(--gold)">/voice/transcribe</span><span style="color:var(--muted)">Audio file → transcript text</span>
+          <span style="color:#C3E88D">POST</span><span style="color:var(--gold)">/scripture/by-emotion</span><span style="color:var(--muted)">Emotional text → Bible verse + TTS</span>
+          <span style="color:#C3E88D">POST</span><span style="color:var(--gold)">/scripture/ask</span><span style="color:var(--muted)">Theological question → answer</span>
+          <span style="color:#C3E88D">POST</span><span style="color:var(--gold)">/prayer/submit</span><span style="color:var(--muted)">Record prayer request for pastor</span>
+          <span style="color:#82AAFF">GET</span><span style="color:var(--gold)">/church/{id}/events</span><span style="color:var(--muted)">Upcoming church events</span>
+          <span style="color:#C3E88D">POST</span><span style="color:var(--gold)">/giving/guide</span><span style="color:var(--muted)">Voice-guided tithe instructions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <div class="panel" id="tab-roadmap">
+    <div class="section-label">Development Roadmap — 4 Phases</div>
+    <div class="roadmap">
+      <div class="phase p1" onclick="togglePhase(this)">
+        <div class="phase-header">
+          <div>
+            <div class="phase-title">Phase 1 — MVP: Voice Core</div>
+            <div class="phase-desc">Get a working voice-in, scripture-out pipeline running locally</div>
+          </div>
+          <div class="phase-duration">Weeks 1–3</div>
+        </div>
+        <div class="phase-tasks">
+          <ul>
+            <li>Set up FastAPI project structure with CORS and health endpoint</li>
+            <li>Integrate Groq Whisper API for speech-to-text transcription</li>
+            <li>Build FAISS vector index with initial 100 scripture seed data</li>
+            <li>Implement emotion detection using Groq LLaMA3</li>
+            <li>Create core RAG function: emotion → FAISS search → verse retrieval</li>
+            <li>Integrate Edge TTS (sw-KE-ZuriNeural for Swahili, AriaNeural for English)</li>
+            <li>Simple React frontend with mic button and verse display</li>
+            <li>Deploy to Railway or Render (free tier)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase p2" onclick="togglePhase(this)">
+        <div class="phase-header">
+          <div>
+            <div class="phase-title">Phase 2 — Scripture Integration</div>
+            <div class="phase-desc">Full Bible ingestion, multi-version support, and theological Q&A</div>
+          </div>
+          <div class="phase-duration">Weeks 4–6</div>
+        </div>
+        <div class="phase-tasks">
+          <ul>
+            <li>Ingest full KJV, NIV, ESV via Bible API or local XML files (31,102 verses each)</li>
+            <li>Build FAISS index for all verses with metadata (book, chapter, testament)</li>
+            <li>Add denominational doctrine document ingestion (church-uploaded PDFs)</li>
+            <li>Implement daily devotional generation based on church calendar</li>
+            <li>Add memory: store user's verse history to avoid repetition (Redis)</li>
+            <li>Theological Q&A with RAG context retrieval</li>
+            <li>Swahili Bible data integration (Kiswahili Bible — free open source)</li>
+            <li>Testing: 50+ conversation scenarios across emotions and languages</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase p3" onclick="togglePhase(this)">
+        <div class="phase-header">
+          <div>
+            <div class="phase-title">Phase 3 — Church Operations</div>
+            <div class="phase-desc">Admin integrations, prayer routing, giving, and pastor dashboard</div>
+          </div>
+          <div class="phase-duration">Weeks 7–10</div>
+        </div>
+        <div class="phase-tasks">
+          <ul>
+            <li>Church Management System API: events, announcements, service schedule</li>
+            <li>Google Calendar integration for real-time event queries</li>
+            <li>Prayer request system: record, categorize, and route to pastor (email/WhatsApp)</li>
+            <li>Voice-guided digital giving with M-Pesa integration (Kenya market)</li>
+            <li>Pastor admin dashboard: view prayer requests, user insights, popular verses</li>
+            <li>Multi-church support: church_id scoping for all queries</li>
+            <li>Sermon Q&A: ingest sermon transcripts, allow post-service questions</li>
+            <li>User auth: phone number OTP (common in Kenya, no email required)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase p4" onclick="togglePhase(this)">
+        <div class="phase-header">
+          <div>
+            <div class="phase-title">Phase 4 — Final Polish & Scale</div>
+            <div class="phase-desc">Production hardening, offline support, and community features</div>
+          </div>
+          <div class="phase-duration">Weeks 11–14</div>
+        </div>
+        <div class="phase-tasks">
+          <ul>
+            <li>PWA: offline mode with cached scriptures for low-connectivity areas</li>
+            <li>WhatsApp bot integration (most widely used in Kenya)</li>
+            <li>USSD fallback interface (*123#) for feature phone users</li>
+            <li>Spiritual growth tracking: streak, verse history, answered prayer log</li>
+            <li>Personalized devotional plans (7-day, 21-day, topical)</li>
+            <li>Load testing and rate limit optimization for Groq free tier</li>
+            <li>Security audit: input sanitization, auth hardening</li>
+            <li>Beta launch with 3 pilot churches in Nairobi</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE -->
+  <div class="panel" id="tab-code">
+    <div class="section-label">Sample Code Snippets</div>
+    <div class="code-selector">
+      <button class="code-btn active" onclick="showCode('rag')">RAG Engine</button>
+      <button class="code-btn" onclick="showCode('emotion')">Emotion Detection</button>
+      <button class="code-btn" onclick="showCode('voice')">Voice Pipeline</button>
+      <button class="code-btn" onclick="showCode('api')">FastAPI Route</button>
+    </div>
+
+    <div class="code-block active" id="code-rag"><span class="cm"># Angaza Core RAG Function — Free Stack</span>
+<span class="cm"># HuggingFace Embeddings + FAISS + Groq LLaMA3</span>
+
+<span class="kw">from</span> sentence_transformers <span class="kw">import</span> SentenceTransformer
+<span class="kw">import</span> faiss, numpy <span class="kw">as</span> np
+<span class="kw">from</span> groq <span class="kw">import</span> Groq
+
+<span class="cm"># Emotion → theological topic mapping</span>
+<span class="cn">EMOTION_TOPICS</span> = {
+    <span class="st">"anxious"</span>:  [<span class="st">"peace"</span>, <span class="st">"trust in God"</span>, <span class="st">"do not worry"</span>],
+    <span class="st">"grieving"</span>: [<span class="st">"comfort"</span>, <span class="st">"God heals the brokenhearted"</span>],
+    <span class="st">"fearful"</span>:  [<span class="st">"courage"</span>, <span class="st">"God is with you"</span>],
+    <span class="st">"hopeless"</span>: [<span class="st">"hope in Christ"</span>, <span class="st">"resurrection"</span>],
+}
+
+<span class="kw">class</span> <span class="fn">AngazaRAGEngine</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, groq_key: str):
+        <span class="cm"># Free HuggingFace model — 384-dim embeddings</span>
+        self.embedder = <span class="fn">SentenceTransformer</span>(
+            <span class="st">"sentence-transformers/all-MiniLM-L6-v2"</span>
+        )
+        self.llm = <span class="fn">Groq</span>(api_key=groq_key)
+        self.<span class="fn">_build_index</span>()
+
+    <span class="kw">def</span> <span class="fn">retrieve_scripture</span>(self, emotion: str, query: str):
+        <span class="cm"># Build enriched semantic query</span>
+        topics = <span class="cn">EMOTION_TOPICS</span>.get(emotion, [<span class="st">"God's love"</span>])
+        enriched = <span class="st">f"Bible verse about {topics[0]} for someone feeling {emotion}"</span>
+
+        <span class="cm"># FAISS semantic search</span>
+        vec = self.embedder.<span class="fn">encode</span>([enriched])
+        distances, idx = self.index.<span class="fn">search</span>(
+            np.<span class="fn">array</span>(vec, dtype=<span class="st">"float32"</span>), k=<span class="num">3</span>
+        )
+        best = self.scriptures[idx[<span class="num">0</span>][<span class="num">0</span>]]
+
+        <span class="cm"># Generate devotional note via Groq (free tier)</span>
+        note = self.llm.chat.completions.<span class="fn">create</span>(
+            model=<span class="st">"llama3-8b-8192"</span>,
+            messages=[{<span class="st">"role"</span>: <span class="st">"user"</span>,
+                <span class="st">"content"</span>: <span class="st">f"Write a 2-sentence warm devotional for someone feeling {emotion} based on: {best['text']}"</span>}],
+            max_tokens=<span class="num">100</span>
+        )
+        <span class="kw">return</span> {
+            <span class="st">"reference"</span>: best[<span class="st">"reference"</span>],
+            <span class="st">"text"</span>: best[<span class="st">"text"</span>],
+            <span class="st">"devotional"</span>: note.choices[<span class="num">0</span>].message.content
+        }</div>
+
+    <div class="code-block" id="code-emotion"><span class="cm"># Emotion Detection via Groq LLaMA3 (free tier)</span>
+<span class="cm"># Falls back to keyword matching for speed</span>
+
+<span class="cn">EMOTION_KEYWORDS</span> = {
+    <span class="st">"anxious"</span>:    [<span class="st">"anxious"</span>, <span class="st">"worried"</span>, <span class="st">"stress"</span>, <span class="st">"nervous"</span>, <span class="st">"wasiwasi"</span>],
+    <span class="st">"grieving"</span>:   [<span class="st">"sad"</span>, <span class="st">"grief"</span>, <span class="st">"lost"</span>, <span class="st">"died"</span>, <span class="st">"huzuni"</span>],
+    <span class="st">"fearful"</span>:    [<span class="st">"afraid"</span>, <span class="st">"scared"</span>, <span class="st">"fear"</span>, <span class="st">"woga"</span>],
+    <span class="st">"hopeless"</span>:   [<span class="st">"hopeless"</span>, <span class="st">"give up"</span>, <span class="st">"no point"</span>, <span class="st">"kukata tamaa"</span>],
+    <span class="st">"joyful"</span>:     [<span class="st">"happy"</span>, <span class="st">"joyful"</span>, <span class="st">"blessed"</span>, <span class="st">"furaha"</span>],
+    <span class="st">"grateful"</span>:   [<span class="st">"thankful"</span>, <span class="st">"grateful"</span>, <span class="st">"shukrani"</span>],
+}
+
+<span class="kw">def</span> <span class="fn">detect_emotion_fast</span>(text: str) -> str:
+    <span class="cm">"""Keyword-based fast path (no API call needed)."""</span>
+    text_lower = text.<span class="fn">lower</span>()
+    <span class="kw">for</span> emotion, keywords <span class="kw">in</span> <span class="cn">EMOTION_KEYWORDS</span>.<span class="fn">items</span>():
+        <span class="kw">if</span> <span class="fn">any</span>(kw <span class="kw">in</span> text_lower <span class="kw">for</span> kw <span class="kw">in</span> keywords):
+            <span class="kw">return</span> emotion
+    <span class="kw">return</span> <span class="st">"seeking"</span>   <span class="cm"># default</span>
+
+<span class="kw">def</span> <span class="fn">detect_emotion_llm</span>(text: str, client: Groq) -> str:
+    <span class="cm">"""LLM-based emotion detection for nuanced inputs."""</span>
+    emotions = <span class="fn">list</span>(<span class="cn">EMOTION_KEYWORDS</span>.<span class="fn">keys</span>())
+    resp = client.chat.completions.<span class="fn">create</span>(
+        model=<span class="st">"llama3-8b-8192"</span>,
+        messages=[{<span class="st">"role"</span>: <span class="st">"user"</span>,
+            <span class="st">"content"</span>: <span class="st">f"Classify emotion in ONE word from {emotions}: '{text}'"</span>}],
+        max_tokens=<span class="num">5</span>, temperature=<span class="num">0.1</span>
+    )
+    result = resp.choices[<span class="num">0</span>].message.content.<span class="fn">strip</span>().<span class="fn">lower</span>()
+    <span class="kw">return</span> result <span class="kw">if</span> result <span class="kw">in</span> emotions <span class="kw">else</span> <span class="st">"seeking"</span>
+
+<span class="kw">def</span> <span class="fn">detect_emotion</span>(text: str, client=<span class="cn">None</span>) -> str:
+    <span class="cm">"""Smart routing: fast path first, LLM as fallback."""</span>
+    fast = <span class="fn">detect_emotion_fast</span>(text)
+    <span class="kw">if</span> fast != <span class="st">"seeking"</span> <span class="kw">or not</span> client:
+        <span class="kw">return</span> fast
+    <span class="kw">return</span> <span class="fn">detect_emotion_llm</span>(text, client)</div>
+
+    <div class="code-block" id="code-voice"><span class="cm"># Angaza Voice Pipeline</span>
+<span class="cm"># ASR: Groq Whisper (free) | TTS: Edge TTS (free, Swahili KE voice)</span>
+
+<span class="kw">import</span> edge_tts, io
+<span class="kw">from</span> groq <span class="kw">import</span> Groq
+
+<span class="cm"># Voice profiles — warm, reverent</span>
+<span class="cn">VOICE_PROFILES</span> = {
+    <span class="st">"en"</span>: <span class="st">"en-US-AriaNeural"</span>,      <span class="cm"># Warm US English female</span>
+    <span class="st">"sw"</span>: <span class="st">"sw-KE-ZuriNeural"</span>,      <span class="cm"># Swahili Kenya female ✓</span>
+    <span class="st">"en_male"</span>: <span class="st">"en-US-GuyNeural"</span>,  <span class="cm"># Warm US English male</span>
+}
+
+<span class="kw">async def</span> <span class="fn">synthesize</span>(text: str, lang: str = <span class="st">"en"</span>) -> bytes:
+    <span class="cm">"""Convert text to reverent speech audio (MP3 bytes)."""</span>
+    voice = <span class="cn">VOICE_PROFILES</span>.<span class="fn">get</span>(lang, <span class="cn">VOICE_PROFILES</span>[<span class="st">"en"</span>])
+
+    <span class="cm"># Slightly slower rate = more reverent delivery</span>
+    comm = edge_tts.<span class="fn">Communicate</span>(text, voice=voice, rate=<span class="st">"-8%"</span>)
+
+    buf = io.<span class="fn">BytesIO</span>()
+    <span class="kw">async for</span> chunk <span class="kw">in</span> comm.<span class="fn">stream</span>():
+        <span class="kw">if</span> chunk[<span class="st">"type"</span>] == <span class="st">"audio"</span>:
+            buf.<span class="fn">write</span>(chunk[<span class="st">"data"</span>])
+    <span class="kw">return</span> buf.<span class="fn">getvalue</span>()
+
+<span class="kw">def</span> <span class="fn">transcribe</span>(audio_path: str, lang: str = <span class="st">"en"</span>) -> str:
+    <span class="cm">"""Transcribe audio using Groq Whisper (14,400 free req/day)."""</span>
+    client = <span class="fn">Groq</span>()
+    <span class="kw">with</span> <span class="fn">open</span>(audio_path, <span class="st">"rb"</span>) <span class="kw">as</span> f:
+        result = client.audio.transcriptions.<span class="fn">create</span>(
+            model=<span class="st">"whisper-large-v3"</span>,
+            file=f,
+            language=lang,          <span class="cm"># "sw" for Swahili</span>
+            response_format=<span class="st">"text"</span>
+        )
+    <span class="kw">return</span> result.<span class="fn">strip</span>()</div>
+
+    <div class="code-block" id="code-api"><span class="cm"># FastAPI Endpoint — Emotion-Aware Scripture</span>
+<span class="cm"># POST /scripture/by-emotion</span>
+
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="fn">QueryRequest</span>(BaseModel):
+    user_id: str
+    text: str                      <span class="cm"># "I feel so anxious today"</span>
+    language: str = <span class="st">"en"</span>          <span class="cm"># "en" | "sw"</span>
+    emotional_state: str = <span class="st">""</span>     <span class="cm"># Optional override</span>
+
+app = <span class="fn">FastAPI</span>(title=<span class="st">"Angaza API 🕊️"</span>)
+engine = <span class="fn">AngazaRAGEngine</span>(groq_key=<span class="cn">GROQ_API_KEY</span>)
+
+@app.<span class="fn">post</span>(<span class="st">"/scripture/by-emotion"</span>)
+<span class="kw">async def</span> <span class="fn">get_scripture</span>(req: <span class="fn">QueryRequest</span>):
+    <span class="cm"># 1. Detect emotion</span>
+    emotion = req.emotional_state <span class="kw">or</span> <span class="fn">detect_emotion</span>(req.text)
+
+    <span class="cm"># 2. RAG retrieval</span>
+    result = engine.<span class="fn">retrieve_scripture</span>(emotion, req.text)
+
+    <span class="cm"># 3. Synthesize speech</span>
+    speech_text = <span class="st">f"{result['reference']}. {result['text']}. {result['devotional']}"</span>
+    audio_bytes = <span class="kw">await</span> <span class="fn">synthesize</span>(speech_text, lang=req.language)
+
+    <span class="kw">return</span> {
+        <span class="st">"reference"</span>:  result[<span class="st">"reference"</span>],
+        <span class="st">"text"</span>:       result[<span class="st">"text"</span>],
+        <span class="st">"devotional"</span>: result[<span class="st">"devotional"</span>],
+        <span class="st">"emotion"</span>:    emotion,
+        <span class="st">"audio_b64"</span>:  <span class="fn">audio_to_base64</span>(audio_bytes),
+        <span class="st">"language"</span>:   req.language
+    }</div>
+  </div>
+
+  <!-- STACK -->
+  <div class="panel" id="tab-stack">
+    <div class="section-label">Free Tech Stack — GenAI Engineer's Choice</div>
+    <div class="stack-grid">
+      <div class="stack-item">
+        <div class="stack-cat">LLM / Inference</div>
+        <div class="stack-name">Groq + LLaMA3</div>
+        <div class="stack-alt">llama3-8b-8192</div>
+        <span class="free-badge">FREE 14,400/day</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Embeddings</div>
+        <div class="stack-name">all-MiniLM-L6-v2</div>
+        <div class="stack-alt">sentence-transformers</div>
+        <span class="free-badge">FREE LOCAL</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Vector Store</div>
+        <div class="stack-name">FAISS (local)</div>
+        <div class="stack-alt">faiss-cpu / faiss-gpu</div>
+        <span class="free-badge">FREE LOCAL</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Speech-to-Text</div>
+        <div class="stack-name">Groq Whisper</div>
+        <div class="stack-alt">whisper-large-v3</div>
+        <span class="free-badge">FREE TIER</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Text-to-Speech</div>
+        <div class="stack-name">Edge TTS</div>
+        <div class="stack-alt">sw-KE-ZuriNeural</div>
+        <span class="free-badge">FREE NEURAL</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">API Framework</div>
+        <div class="stack-name">FastAPI</div>
+        <div class="stack-alt">Python + Uvicorn</div>
+        <span class="free-badge">FREE OSS</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Database</div>
+        <div class="stack-name">PostgreSQL</div>
+        <div class="stack-alt">Supabase free tier</div>
+        <span class="free-badge">FREE 500MB</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Cache / Memory</div>
+        <div class="stack-name">Redis</div>
+        <div class="stack-alt">Upstash free tier</div>
+        <span class="free-badge">FREE 10K/day</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Hosting</div>
+        <div class="stack-name">Railway / Render</div>
+        <div class="stack-alt">512MB free container</div>
+        <span class="free-badge">FREE TIER</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Bible Data</div>
+        <div class="stack-name">bible-api.com</div>
+        <div class="stack-alt">KJV·NIV·ESV·SW</div>
+        <span class="free-badge">FREE API</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Payments (Kenya)</div>
+        <div class="stack-name">M-Pesa Daraja</div>
+        <div class="stack-alt">Safaricom STK Push</div>
+        <span class="free-badge">FREE SANDBOX</span>
+      </div>
+      <div class="stack-item">
+        <div class="stack-cat">Messaging</div>
+        <div class="stack-name">WhatsApp Cloud API</div>
+        <div class="stack-alt">Meta Business free</div>
+        <span class="free-badge">FREE 1K/month</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE DEMO -->
+  <div class="panel" id="tab-demo">
+    <div class="section-label">Interactive Demo — Scripture by Emotion</div>
+    <div class="demo-area">
+      <div class="demo-title">✦ Ask Angaza</div>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px">Type how you're feeling, or choose an emotion below. Angaza will find a scripture for you.</p>
+      <div class="emotion-chips">
+        <button class="chip" onclick="setEmotion(this,'anxious')">😟 Anxious</button>
+        <button class="chip" onclick="setEmotion(this,'grieving')">😢 Grieving</button>
+        <button class="chip" onclick="setEmotion(this,'fearful')">😨 Fearful</button>
+        <button class="chip" onclick="setEmotion(this,'hopeless')">😔 Hopeless</button>
+        <button class="chip" onclick="setEmotion(this,'joyful')">😊 Joyful</button>
+        <button class="chip" onclick="setEmotion(this,'grateful')">🙏 Grateful</button>
+        <button class="chip" onclick="setEmotion(this,'lonely')">🥺 Lonely</button>
+        <button class="chip" onclick="setEmotion(this,'overwhelmed')">😮‍💨 Overwhelmed</button>
+      </div>
+      <div class="input-row">
+        <input class="demo-input" id="demo-input" placeholder="e.g. 'I feel so anxious about tomorrow...'" />
+        <button class="btn-primary" id="demo-btn" onclick="askAngaza()">Ask Angaza</button>
+      </div>
+      <div class="result-box" id="result-box"></div>
+    </div>
+  </div>
+
+  <div style="height:60px"></div>
+</div>
+
+<script>
+// ── TAB NAVIGATION ──
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── ROADMAP TOGGLE ──
+function togglePhase(el) { el.classList.toggle('open'); }
+
+// ── CODE TABS ──
+function showCode(id) {
+  document.querySelectorAll('.code-block').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.code-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('code-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── EMOTION CHIP ──
+let selectedEmotion = '';
+function setEmotion(el, emotion) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  selectedEmotion = emotion;
+}
+
+// ── SCRIPTURE DATABASE (demo, no API needed) ──
+const SCRIPTURE_DB = {
+  anxious: {
+    reference: "Philippians 4:6-7", version: "NIV",
+    text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.",
+    devotional: "God's peace is not the absence of problems — it is His presence in the middle of them. Bring your worries to Him today, and let His peace, which is greater than anything we can understand, wrap around your heart like a warm embrace."
+  },
+  grieving: {
+    reference: "Psalm 34:18", version: "NIV",
+    text: "The LORD is close to the brokenhearted and saves those who are crushed in spirit.",
+    devotional: "In your deepest grief, you are not alone. God draws especially near to those whose hearts are breaking — He is not distant from your pain, He is right there in it with you, holding every tear."
+  },
+  fearful: {
+    reference: "Isaiah 41:10", version: "ESV",
+    text: "Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand.",
+    devotional: "God does not say 'be not afraid' and leave you alone. He follows every command to not fear with a promise: I AM WITH YOU. You are not facing this alone — the God of the universe is personally upholding you."
+  },
+  hopeless: {
+    reference: "Lamentations 3:22-23", version: "NIV",
+    text: "Because of the LORD's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness.",
+    devotional: "Tomorrow morning, God's mercies will be completely fresh and new, as if they have never been used. No matter how dark today feels, His faithfulness outlasts every season of despair."
+  },
+  joyful: {
+    reference: "Psalm 100:2-3", version: "NIV",
+    text: "Worship the LORD with gladness; come before him with joyful songs. Know that the LORD is God. It is he who made us, and we are his; we are his people, the sheep of his pasture.",
+    devotional: "Your joy is a holy act of worship. When you rejoice, you are declaring to the world that God is good and faithful. Let your gladness ring out today as a song of praise to the One who made you."
+  },
+  grateful: {
+    reference: "1 Thessalonians 5:18", version: "NIV",
+    text: "Give thanks in all circumstances; for this is God's will for you in Christ Jesus.",
+    devotional: "Gratitude is not just a feeling — it is a discipline that shapes our entire perspective. As you pause to give thanks today, you are aligning your heart with the truth that God is at work in every detail of your life."
+  },
+  lonely: {
+    reference: "Psalm 23:4", version: "KJV",
+    text: "Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.",
+    devotional: "Even in the loneliest valleys, you are accompanied by the Good Shepherd. He knows the path you are walking, and He walks it with you — His presence is the comfort that no human companion can fully replace."
+  },
+  overwhelmed: {
+    reference: "Matthew 11:28-29", version: "NIV",
+    text: "Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me, for I am gentle and humble in heart, and you will find rest for your souls.",
+    devotional: "Jesus is not asking you to carry this alone. His invitation is open right now — bring your exhaustion, your burdens, your endless to-do list — and exchange them for the rest that only He can give."
+  },
+  seeking: {
+    reference: "Jeremiah 29:13", version: "NIV",
+    text: "You will seek me and find me when you seek me with all your heart.",
+    devotional: "God never hides from a sincere heart. The very fact that you are seeking Him today is evidence that He is already drawing you near. Keep seeking — you will find Him faithful."
+  }
+};
+
+function detectEmotion(text) {
+  const t = text.toLowerCase();
+  if (/anxious|stress|worry|worried|nervous|uneasy|wasiwasi/.test(t)) return 'anxious';
+  if (/sad|grief|griev|lost|died|death|mourn|huzuni/.test(t)) return 'grieving';
+  if (/afraid|scared|fear|terrif|woga/.test(t)) return 'fearful';
+  if (/hope|hopeless|give up|pointless|kukata/.test(t)) return 'hopeless';
+  if (/happy|joy|joyful|blessed|excit|furaha/.test(t)) return 'joyful';
+  if (/grateful|thank|blessing|shukrani/.test(t)) return 'grateful';
+  if (/alone|lonely|isolated|lonesome/.test(t)) return 'lonely';
+  if (/overwhelm|tired|exhaust|weary|burden|too much/.test(t)) return 'overwhelmed';
+  return 'seeking';
+}
+
+async function askAngaza() {
+  const input = document.getElementById('demo-input').value.trim();
+  const btn = document.getElementById('demo-btn');
+  const box = document.getElementById('result-box');
+
+  if (!input && !selectedEmotion) {
+    document.getElementById('demo-input').focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Seeking...';
+  box.innerHTML = '<div class="loading">Searching scripture</div>';
+  box.classList.add('show');
+
+  // Simulate async processing
+  await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+
+  const emotion = selectedEmotion || detectEmotion(input);
+  const scripture = SCRIPTURE_DB[emotion] || SCRIPTURE_DB.seeking;
+
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="verse-ref">${scripture.reference}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);background:rgba(255,255,255,0.04);padding:4px 10px;border-radius:20px">${scripture.version} · ${emotion}</div>
+    </div>
+    <div class="verse-text">"${scripture.text}"</div>
+    <div style="width:40px;height:1px;background:var(--border);margin:12px 0"></div>
+    <div class="devotional"><strong>✦ Devotional:</strong> ${scripture.devotional}</div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button onclick="askAnother()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">🔄 Another verse</button>
+      <button onclick="copyVerse('${scripture.reference}: ${scripture.text.replace(/'/g,"\\'")}')}" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">📋 Copy verse</button>
+    </div>
+  `;
+
+  btn.disabled = false;
+  btn.textContent = 'Ask Angaza';
+}
+
+function askAnother() {
+  selectedEmotion = '';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('demo-input').value = '';
+  document.getElementById('result-box').classList.remove('show');
+  document.getElementById('result-box').innerHTML = '';
+}
+
+function copyVerse(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy verse', 2000);
+  });
+}
+
+// Enter key support
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('demo-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') askAngaza();
+  });
+  // Auto-open first phase
+  document.querySelectorAll('.phase')[0].classList.add('open');
+});
+</script>
+</body>
+</html>

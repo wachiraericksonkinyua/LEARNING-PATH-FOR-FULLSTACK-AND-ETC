@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Builds — Kenya SME Automation Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1b1e;
+    --bg-panel:#12292c;
+    --bg-panel-2:#0f2124;
+    --line: rgba(234,242,238,0.10);
+    --text:#eaf2ee;
+    --muted:#9fb3ae;
+    --muted-2:#6f8681;
+    --amber:#f2a93b; --amber-dim: rgba(242,169,59,0.16);
+    --green:#17b26a; --green-dim: rgba(23,177,106,0.16);
+    --violet:#8b7fd1; --violet-dim: rgba(139,127,209,0.18);
+    --red:#e2574c; --red-dim: rgba(226,87,76,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;}
+  ::selection{background:var(--green); color:#06120f;}
+  h1,h2,h3{font-family:'Fraunces',serif; margin:0; letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit; cursor:pointer;}
+
+  .wrap{max-width:1020px; margin:0 auto; padding:28px 20px 80px;}
+
+  /* HERO */
+  .hero{
+    padding:30px 32px; border-radius:18px;
+    background: radial-gradient(120% 140% at 0% 0%, #14312f 0%, #0f2427 55%, #0d1b1e 100%);
+    border:1px solid var(--line);
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--green); margin-bottom:10px; display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green);}
+  .hero h1{font-size:30px; font-weight:600; line-height:1.18; margin-bottom:10px;}
+  .hero h1 em{font-style:italic; color:var(--green);}
+  .hero p{color:var(--muted); font-size:15px; line-height:1.6; max-width:70ch;}
+
+  /* RESUME BANNER */
+  .resume-banner{
+    display:none; margin-top:16px; padding:12px 16px; border-radius:10px;
+    background:rgba(255,255,255,0.04); border:1px solid var(--line);
+    align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .resume-banner.show{display:flex;}
+  .resume-banner .rb-txt{font-size:13px; color:var(--muted);}
+  .resume-banner .rb-txt b{color:var(--text);}
+  .resume-banner button{
+    background:var(--green); color:#06160f; border:none; border-radius:8px; padding:8px 14px; font-size:12.5px; font-weight:600;
+  }
+  .storage-banner{
+    margin-top:16px; padding:12px 16px; border-radius:10px;
+    background:var(--red-dim); border:1px solid rgba(226,87,76,0.35);
+    font-size:12.5px; color:var(--text); line-height:1.6; display:none;
+  }
+  .storage-banner.show{display:block;}
+  .storage-banner b{color:var(--red);}
+  .storage-ok{
+    margin-top:10px; font-size:11.5px; color:var(--muted-2); display:flex; align-items:center; gap:6px;
+  }
+  .storage-ok .dot{width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0;}
+  .storage-ok.bad .dot{background:var(--red);}
+
+  /* SEQUENCE STRIP */
+  .sequence{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:20px;
+  }
+  @media (max-width:760px){ .sequence{grid-template-columns:1fr;} }
+  .seq-step{
+    background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .seq-num{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+  }
+  .seq-step .seq-txt b{display:block; font-size:13px; margin-bottom:2px;}
+  .seq-step .seq-txt span{font-size:12px; color:var(--muted); line-height:1.5;}
+
+  .overlap-note{
+    margin-top:14px; font-size:12.5px; color:var(--muted); border-left:2px solid var(--violet);
+    padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:0 8px 8px 0; line-height:1.6;
+  }
+  .stack-note{
+    margin-top:10px; font-size:12.5px; color:var(--muted); border-left:2px solid var(--amber);
+    padding:8px 12px; background:rgba(255,255,255,0.02); border-radius:0 8px 8px 0; line-height:1.6;
+  }
+  .stack-note b{color:var(--text);}
+
+  /* DASHBOARD */
+  .dash{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:22px;
+  }
+  @media (max-width:760px){ .dash{grid-template-columns:repeat(2,1fr);} }
+  .card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+  }
+  .card .k{font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600;}
+  .card .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px;}
+  .checkin-btn{
+    background:var(--green); color:#06160f; border:none; border-radius:10px; padding:10px 16px;
+    font-weight:600; font-size:13px; width:100%;
+  }
+  .checkin-btn:disabled{background:var(--bg-panel-2); color:var(--muted-2); border:1px solid var(--line);}
+
+  /* TRACK NAV */
+  .tracknav{display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
+  .tracknav button{
+    flex:1; min-width:220px; padding:14px 16px; border-radius:12px; border:1px solid var(--line);
+    background:var(--bg-panel); color:var(--muted); text-align:left; transition:all .2s;
+  }
+  .tracknav button .t-title{color:var(--text); font-weight:600; font-size:14px; display:block; margin-bottom:2px;}
+  .tracknav button .t-sub{font-size:11px;}
+  .tracknav button.active{border-color: var(--accent, var(--green)); background: var(--accent-dim, var(--green-dim));}
+  .tracknav button.active .t-title{color:var(--accent, var(--green));}
+
+  .track-panel{display:none;}
+  .track-panel.visible{display:block;}
+  .track-brief{
+    font-size:13px; color:var(--muted); margin-bottom:12px; padding:12px 16px; border-radius:10px;
+    background:rgba(255,255,255,0.02); border:1px solid var(--line); line-height:1.6;
+  }
+  .track-brief b{color:var(--text);}
+
+  .track-total{
+    display:flex; gap:10px; align-items:center; margin-bottom:16px; font-size:12px; color:var(--muted-2);
+  }
+  .track-total .dot{width:5px; height:5px; border-radius:50%; background:var(--muted-2);}
+
+  .phase{
+    border:1px solid var(--line); border-radius:14px; margin-bottom:14px; overflow:hidden; background:var(--bg-panel);
+  }
+  .phase-head{
+    padding:16px 18px; display:flex; align-items:center; gap:14px; cursor:pointer; user-select:none;
+  }
+  .phase-num{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted-2);
+    border:1px solid var(--line); border-radius:6px; padding:2px 7px; flex-shrink:0;
+  }
+  .phase-title{flex:1;}
+  .phase-title .pt{font-weight:600; font-size:15px;}
+  .phase-title .pw{font-size:11.5px; color:var(--muted); font-family:'IBM Plex Mono',monospace; margin-top:2px;}
+  .phase-progress{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); flex-shrink:0; text-align:right;}
+  .phase-progress .pp-time{display:block; font-size:10.5px; color:var(--muted-2); margin-top:1px;}
+  .chevron{transition:transform .25s ease; color:var(--muted-2); flex-shrink:0;}
+  .phase.open .chevron{transform:rotate(90deg);}
+  .phase-body{max-height:0; overflow:hidden; transition:max-height .35s ease;}
+  .phase.open .phase-body{max-height:3200px;}
+  .phase-inner{padding:0 18px 18px;}
+  .why{
+    font-size:13px; color:var(--muted); line-height:1.55; border-left:2px solid var(--accent, var(--green));
+    padding:10px 14px; margin-bottom:14px; background:rgba(255,255,255,0.02); border-radius:0 8px 8px 0;
+  }
+  .task{
+    display:flex; gap:12px; padding:13px 0; border-top:1px solid var(--line);
+  }
+  .task:first-of-type{border-top:none;}
+  .task input[type=checkbox]{
+    width:19px; height:19px; margin-top:2px; accent-color:var(--accent, var(--green)); flex-shrink:0; cursor:pointer;
+  }
+  .task-body{flex:1; min-width:0;}
+  .task-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+  .task-text{font-size:14px; line-height:1.5;}
+  .task-time{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--accent, var(--green));
+    background:var(--accent-dim, var(--green-dim)); padding:1px 7px; border-radius:20px; flex-shrink:0; white-space:nowrap;
+  }
+  .task.done .task-text{color:var(--muted-2); text-decoration:line-through;}
+  .task.done .task-time{opacity:0.4;}
+  .task-teaches{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.5;}
+  .task-teaches b{color:var(--muted); font-weight:600;}
+  .task-row2{display:flex; align-items:center; gap:10px; margin-top:7px; flex-wrap:wrap;}
+  .link-btn{
+    font-size:11px; color:var(--accent,var(--green)); border:1px solid var(--line); padding:3px 9px; border-radius:6px;
+    text-decoration:none; display:inline-flex; align-items:center; gap:4px;
+  }
+  .note-toggle{font-size:11px; color:var(--muted-2); border:none; background:none; text-decoration:underline; padding:0;}
+  textarea.note{
+    width:100%; margin-top:8px; background:var(--bg-panel-2); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:13px; padding:8px 10px; resize:vertical; min-height:44px;
+    display:none;
+  }
+  textarea.note.show{display:block;}
+
+  .pay-box{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; margin-bottom:16px;
+  }
+  .pay-item{
+    flex:1; min-width:150px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:10px; padding:10px 14px;
+  }
+  .pay-item .pv{font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;}
+  .pay-item .pl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px;}
+
+  .footer-actions{display:flex; gap:10px; margin-top:24px; flex-wrap:wrap;}
+  .footer-actions button{
+    background:var(--bg-panel); border:1px solid var(--line); color:var(--muted); padding:10px 16px; border-radius:10px; font-size:13px;
+  }
+  .footer-actions button:hover{color:var(--text); border-color:var(--muted-2);}
+  .foot-note{font-size:12px; color:var(--muted-2); margin-top:14px; line-height:1.6;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--green); color:#06160f; padding:10px 20px; border-radius:10px; font-size:13px; font-weight:600;
+    opacity:0; transition:all .3s ease; pointer-events:none; z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Live plan · Nairobi, Kenya</div>
+    <h1>Three builds. <em>One sequence.</em></h1>
+    <p>Same backend skills (Python, FastAPI, Supabase), three products, sold in an order that lets each one warm up the next client instead of starting cold every time. Every task below has a time estimate and a one-line note on what it actually teaches you — do a chunk, close the tab, come back tomorrow exactly where you left off.</p>
+
+    <div class="sequence">
+      <div class="seq-step">
+        <div class="seq-num" style="background:var(--amber-dim); color:var(--amber);">1</div>
+        <div class="seq-txt"><b>M-Pesa Daraja Specialist</b><span>Clearest pitch, free sandbox, business owners get it instantly.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num" style="background:var(--green-dim); color:var(--green);">2</div>
+        <div class="seq-txt"><b>FAQ / Support Triage Bot</b><span>Same client pool, simpler build (read-only) — your easiest second sell.</span></div>
+      </div>
+      <div class="seq-step">
+        <div class="seq-num" style="background:var(--violet-dim); color:var(--violet);">3</div>
+        <div class="seq-txt"><b>WhatsApp-to-DB Agent</b><span>The upsell — same bot, now writes to inventory/orders. Pitch to clients you already have.</span></div>
+      </div>
+    </div>
+    <div class="overlap-note">⚠ Tracks 2 and 3 share almost the same backend. Track 2 only reads data (answers questions). Track 3 also writes data (updates stock/orders). Build Track 2's webhook well and Track 3 is mostly an extension, not a rebuild.</div>
+    <div class="stack-note">🔧 <b>Stack updated from your notes:</b> FastAPI on Render (free web service, no credit card) as the default host — Koyeb is noted as an alternative but its free tier has had reports of changing terms since its 2026 acquisition, so verify current limits before relying on it. Groq's <code>llama-3.1-8b-instant</code> was deprecated in June 2026 — this version uses <code>openai/gpt-oss-20b</code>, Groq's recommended free-tier replacement. Supabase pgvector is included as an optional stretch step for Track F once you outgrow a plain system-prompt context block.</div>
+
+    <div class="resume-banner" id="resumeBanner">
+      <div class="rb-txt">Pick up where you left off: <b id="resumeText"></b></div>
+      <button onclick="jumpToResume()">Resume</button>
+    </div>
+    <div class="storage-banner" id="storageBanner">
+      <b>⚠ Saving isn't connected right now.</b> This page can only save your progress when it's opened inside Claude's own preview (the panel that opens when you view this artifact in the chat) — not when it's downloaded and opened as a plain file in your browser, or opened outside claude.ai. If you're viewing this inside Claude and still seeing this, tell me and I'll dig further — it may mean the storage bridge failed to load this time; refreshing the artifact panel usually fixes that.
+    </div>
+    <div class="storage-ok" id="storageOk"><span class="dot"></span><span id="storageOkText">Checking save status…</span></div>
+  </div>
+
+  <div class="dash">
+    <div class="card">
+      <div class="k mono" id="overallPct">0%</div>
+      <div class="lbl">Overall progress</div>
+    </div>
+    <div class="card">
+      <div class="k mono" id="streakCount">0</div>
+      <div class="lbl">Day streak</div>
+    </div>
+    <div class="card">
+      <div class="k mono" id="tasksDone">0/0</div>
+      <div class="lbl">Tasks shipped</div>
+    </div>
+    <div class="card">
+      <button class="checkin-btn" id="checkinBtn" onclick="checkInToday()">Mark today as worked</button>
+    </div>
+  </div>
+
+  <div class="tracknav">
+    <button id="navM" onclick="showTrack('M')" style="--accent:#f2a93b; --accent-dim:rgba(242,169,59,0.16);">
+      <span class="t-title">① 💳 M-Pesa Daraja Specialist</span>
+      <span class="t-sub">Automate payment reconciliation for local shops</span>
+    </button>
+    <button id="navF" onclick="showTrack('F')" style="--accent:#17b26a; --accent-dim:rgba(23,177,106,0.16);">
+      <span class="t-title">② 💬 FAQ / Support Triage Bot</span>
+      <span class="t-sub">Answer DM overload on Instagram/WhatsApp</span>
+    </button>
+    <button id="navW" onclick="showTrack('W')" style="--accent:#8b7fd1; --accent-dim:rgba(139,127,209,0.18);">
+      <span class="t-title">③ 📦 WhatsApp-to-DB Agent</span>
+      <span class="t-sub">Upsell: staff update inventory by texting</span>
+    </button>
+  </div>
+
+  <div id="panelM" class="track-panel"></div>
+  <div id="panelF" class="track-panel"></div>
+  <div id="panelW" class="track-panel"></div>
+
+  <div class="footer-actions">
+    <button onclick="exportProgress()">⬇ Export progress (.json)</button>
+    <button onclick="resetProgress()">↺ Reset all progress</button>
+  </div>
+  <div class="foot-note">
+    Every checkbox, note, and open/closed phase auto-saves to your account and is tied to this artifact — close the tab and reopen it tomorrow (here or on another device where you're signed in) and it'll be exactly as you left it. No manual save step needed.
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const TRACKS = {
+  M: {
+    name: "M-Pesa Daraja Specialist",
+    accent: "#f2a93b", accentDim: "rgba(242,169,59,0.16)",
+    brief: "<b>Build order rationale:</b> Confirmed, named demand — M-Pesa is core financial infrastructure for Kenyan business, and Safaricom's sandbox is completely free. This is your cleanest possible pitch: \"I automate the M-Pesa confirmation step you're doing by hand.\" Watch for aggregators (Pesapal, IntaSend, Paystack) already offering no-code versions for small transaction volumes — your edge is custom backend work for developers/agencies who want full control, not competing on price with a plugin.",
+    pay: [
+      {v:"KSh 15,000–50,000", l:"per setup"},
+      {v:"KSh 2,000–5,000/mo", l:"hosting retainer"},
+      {v:"2–4 weeks", l:"to first client"}
+    ],
+    phases: [
+      {
+        id:"m1", num:"M1", title:"Learn the Daraja sandbox", weeks:"Week 1",
+        why:"You need to understand the OAuth2 token flow, how Safaricom's asynchronous callback works, and what a client will actually need before you can go live — this is the part beginners get burned by, twice.",
+        tasks:[
+          {t:"Create a free developer account and generate sandbox credentials.", time:"~15 min", teaches:"How Safaricom's developer portal issues test credentials that are completely separate from a live business account.", link:"https://developer.safaricom.co.ke/"},
+          {t:"Read the Lipa na M-Pesa Online (STK Push) documentation end to end.", time:"~45 min", teaches:"The exact request/response shape every Daraja integration is built on — this is the reference you'll come back to constantly.", link:"https://developer.safaricom.co.ke/Documentation"},
+          {t:"Understand the difference between the request (STK push) and the callback (payment result) — these are two separate HTTP exchanges.", time:"~30 min", teaches:"Why the payment isn't confirmed the moment you send the STK push — you must wait for Safaricom to call you back, which is what makes tunneling necessary in the next phase."},
+          {t:"Read what's actually required to go from sandbox to a live Paybill/Till (business registration, Safaricom go-live approval).", time:"~20 min", teaches:"The real bottleneck in this track isn't your code — it's that your client needs an existing Paybill/Till and Safaricom approval before you can flip the switch. Know this before you pitch anyone.", link:"https://developer.safaricom.co.ke/docs#going-live"}
+        ]
+      },
+      {
+        id:"m2", num:"M2", title:"Build the working MVP", weeks:"Week 1–2",
+        why:"A working sandbox transaction, end to end, is your entire proof of skill. Nothing else in this track matters until this works reliably — and it should live somewhere other than your laptop.",
+        tasks:[
+          {t:"Build a FastAPI app with two endpoints: /stk-push and /mpesa-callback.", time:"~90 min", teaches:"How to structure a webhook receiver in Python — the core pattern behind every track in this roadmap.", link:"https://fastapi.tiangolo.com/tutorial/"},
+          {t:"Tunnel your local server with ngrok (or localtunnel) so Safaricom's sandbox can reach it.", time:"~20 min", teaches:"How an external service calls back into code running on your own machine, with no public IP of its own.", link:"https://ngrok.com/docs/getting-started/"},
+          {t:"Log every successful callback into a free Supabase table with MerchantRequestID, ResultCode, and receipt number.", time:"~40 min", teaches:"Basic reconciliation schema design — the fields you log now are what a client's finance person will actually query later.", link:"https://supabase.com/docs/guides/database/overview"},
+          {t:"Trigger 5 test payments end-to-end and confirm the database updates instantly each time.", time:"~30 min", teaches:"How to test reliability, not just a single happy-path run, before you ever show this to anyone."},
+          {t:"Deploy the same app to Render's free web service tier so it runs without your laptop being on.", time:"~45 min", teaches:"The gap between a local demo and something a client can actually depend on. Render's free tier sleeps after inactivity and takes ~30–50s to wake — fine for a demo, worth mentioning if a client asks about latency.", link:"https://render.com/docs/deploy-fastapi"}
+        ]
+      },
+      {
+        id:"m3", num:"M3", title:"Package the proof", weeks:"Week 2",
+        why:"Business owners and dev agencies don't want to read code — they want to see money hit a database in real time.",
+        tasks:[
+          {t:"Record a split-screen video: phone receiving the STK prompt on one side, database updating on the other.", time:"~30 min", teaches:"Why a 30-second video outsells a GitHub link — most buyers can't read code but can absolutely evaluate 'does this work'."},
+          {t:"Clean up your code into a reusable boilerplate and push it to a public GitHub repo.", time:"~45 min", teaches:"How to turn one-off client work into a template you can re-deploy in hours, not days, for the next client.", link:"https://github.com/"},
+          {t:"Write one sentence you can say out loud that explains the value, no jargon.", time:"~15 min", teaches:"Translating a technical capability into language a non-technical shop owner immediately understands."}
+        ]
+      },
+      {
+        id:"m4", num:"M4", title:"Land the first client", weeks:"Weeks 3–5",
+        why:"Local web design agencies are a faster route than direct SME outreach here — they already have clients who need this and no one on their team who wants to build it.",
+        tasks:[
+          {t:"Message 10 local web design agencies/freelancers on Instagram or LinkedIn who build sites for Kenyan SMEs.", time:"~1 hr, spread over a week", teaches:"Agencies are a distribution channel, not a client — find people who already have your buyer's trust and don't want to build this themselves."},
+          {t:"Offer to handle their next client's M-Pesa backend for free, just to prove it works smoothly.", time:"ongoing", teaches:"How to de-risk your first sale when you have zero case studies — trade a free pilot for a testimonial and a repeatable relationship."},
+          {t:"Convert that free pilot into your first paid setup fee plus a small monthly retainer.", time:"ongoing", teaches:"How to price once you have proof — the retainer is what turns a one-off gig into recurring income."}
+        ]
+      }
+    ]
+  },
+  F: {
+    name: "FAQ / Support Triage Bot",
+    accent: "#17b26a", accentDim: "rgba(23,177,106,0.16)",
+    brief: "<b>Build order rationale:</b> WhatsApp and Instagram DMs are the default sales channel for Nairobi's 'DM to order' shop culture, and owners spend hours a day answering the same three questions. Heads up: generic FAQ bots are now a crowded space — no-code builders (AiSensy, Wati, Interakt) undercut anyone selling 'just answers questions' on price. Your real edge here isn't the FAQ bot itself, it's that Track F is the on-ramp to Track W, where custom, data-integrated bots still beat off-the-shelf tools.",
+    pay: [
+      {v:"KSh 15,000–30,000", l:"per setup"},
+      {v:"KSh 4,000–5,000/mo", l:"hosting retainer"},
+      {v:"3–4 weeks", l:"to first client"}
+    ],
+    phases: [
+      {
+        id:"f1", num:"F1", title:"Learn the webhook + context pattern", weeks:"Week 2–3 (can overlap Track M)",
+        why:"This is the core skill for both Track F and Track W — get it right once here and Track W becomes an extension, not a rebuild.",
+        tasks:[
+          {t:"Learn how FastAPI handles incoming asynchronous POST requests from a chat widget or messaging platform.", time:"~40 min", teaches:"The async request-handling pattern behind every chat webhook you'll ever build.", link:"https://fastapi.tiangolo.com/async/"},
+          {t:"Understand 'context injection': feeding a business's live data into an LLM's system prompt so it never invents an answer.", time:"~30 min", teaches:"The single most important guardrail concept in this whole roadmap — an LLM that answers from your data, not from memory."},
+          {t:"Get a free-tier Groq API key and test a basic prompt/response round trip using openai/gpt-oss-20b (Groq's current free-tier replacement for the deprecated llama-3.1-8b-instant).", time:"~25 min", teaches:"How to call an LLM API and get structured, fast responses — Groq's inference speed is what makes this feel instant over WhatsApp.", link:"https://console.groq.com/docs/models"}
+        ]
+      },
+      {
+        id:"f2", num:"F2", title:"Build the MVP", weeks:"Week 3",
+        why:"The bot is only as trustworthy as its guardrails — it must refuse to guess when the answer isn't in its data.",
+        tasks:[
+          {t:"Write a FastAPI /chat endpoint that receives a message and business ID.", time:"~50 min", teaches:"How to route a single endpoint to serve many different businesses' bots from one deployment."},
+          {t:"Create a Supabase table holding a mock store's FAQ, prices, delivery zones, and hours.", time:"~30 min", teaches:"How to model a business's operating rules as structured data instead of hardcoding them into your prompt.", link:"https://supabase.com/docs/guides/database/tables"},
+          {t:"Write a strict system prompt: 'Only answer from the Context block below. If it's not there, ask the customer to leave a phone number.'", time:"~30 min", teaches:"Prompt-level guardrails — the difference between a bot that's useful and one that quietly makes up delivery fees."},
+          {t:"Test it with tricky, realistic questions — not just the easy ones.", time:"~30 min", teaches:"Why demoing only happy-path questions gets you burned in front of a real client."},
+          {t:"Stretch (optional): move the FAQ data into a Supabase pgvector table so the bot retrieves relevant facts by similarity instead of stuffing everything into one prompt.", time:"~1 hr", teaches:"Basic RAG — how retrieval scales past a handful of FAQ rows into hundreds, which matters once a client's catalog grows.", link:"https://supabase.com/docs/guides/ai/vector-columns"}
+        ]
+      },
+      {
+        id:"f3", num:"F3", title:"Demo it in under 2 minutes", weeks:"Week 4",
+        why:"Owners are busy and skeptical of abstract 'AI' — show, don't explain.",
+        tasks:[
+          {t:"Record your screen asking the bot a hard question: 'Can you deliver to Ruaka today and how much?'", time:"~20 min", teaches:"How to choose a demo question that proves the guardrails work, not just that the bot can chat."},
+          {t:"Show it calculating an exact delivery fee instantly, based on the rules you gave it.", time:"~15 min", teaches:"Concrete, numeric answers land harder in a demo than a generic 'yes I can help with that'."},
+          {t:"Build a one-page portfolio with this demo plus your M-Pesa demo.", time:"~45 min", teaches:"A single link you can send instead of explaining your work over and over in DMs.", link:"https://www.canva.com/"}
+        ]
+      },
+      {
+        id:"f4", num:"F4", title:"Land the first client", weeks:"Weeks 4–6",
+        why:"Target businesses that are visibly drowning in DMs — the pain is easy to spot from the outside.",
+        tasks:[
+          {t:"List 15 fast-growing Instagram/TikTok shops that explicitly say 'DM to order.'", time:"~45 min", teaches:"How to prospect by observable pain instead of guessing who might need this."},
+          {t:"Message 3–5 per week with your demo video, not an abstract AI pitch.", time:"ongoing", teaches:"Leading with proof, not concept — the video does the convincing, not your pitch."},
+          {t:"Offer a free 3-day trial using their real prices and delivery zones.", time:"ongoing", teaches:"How to make the trial low-risk and immediately relevant, not a generic sandbox demo."},
+          {t:"Close on a flat setup fee plus a small monthly retainer for updates and hosting.", time:"ongoing", teaches:"Pricing a service that needs occasional upkeep as the client's catalog changes."}
+        ]
+      }
+    ]
+  },
+  W: {
+    name: "WhatsApp-to-DB Agent",
+    accent: "#8b7fd1", accentDim: "rgba(139,127,209,0.18)",
+    brief: "<b>Build order rationale:</b> This is Track F's bot with write-access added — instead of only answering questions, staff can update stock or log a sale by texting a command. Off-the-shelf chatbot builders fall apart here; deterministic, data-integrated workflows are exactly where custom-built agents keep an edge over no-code tools. It carries more trust risk (it's changing the business's real data), so it sells best as an upsell to a client who has already seen your work hold up, not as a cold pitch.",
+    pay: [
+      {v:"KSh 25,000–80,000", l:"per setup"},
+      {v:"KSh 5,000–8,000/mo", l:"hosting + support"},
+      {v:"5–8 weeks", l:"to first client (often an upsell)"}
+    ],
+    phases: [
+      {
+        id:"w1", num:"W1", title:"Learn the WhatsApp Business Cloud API", weeks:"Week 4–5",
+        why:"This is a different platform from a generic chat widget — Meta's webhook verification, message format, and business-verification rules have their own quirks worth learning properly once.",
+        tasks:[
+          {t:"Set up a free Meta Business app and read the WhatsApp Cloud API getting-started docs.", time:"~1 hr", teaches:"How Meta's app structure, phone number IDs, and access tokens fit together — the account-setup side most tutorials skip.", link:"https://developers.facebook.com/docs/whatsapp/cloud-api/get-started"},
+          {t:"Learn how Meta validates your webhook token and delivers incoming message payloads.", time:"~40 min", teaches:"Webhook verification handshake — the exact step that trips people up the first time they connect Meta to their own server.", link:"https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks"},
+          {t:"Read what business verification requires for a client to send messages outside the free tier's limits (template messages, the 24-hour reply window).", time:"~25 min", teaches:"A real limitation that will affect your pitch — you can't message a customer freely after 24 hours without an approved template."}
+        ]
+      },
+      {
+        id:"w2", num:"W2", title:"Build the read+write MVP", weeks:"Week 5–6",
+        why:"This is the step up from Track F: the bot no longer just answers questions, it changes the business's real inventory or order data.",
+        tasks:[
+          {t:"Write a FastAPI webhook that receives WhatsApp messages and validates the token.", time:"~1 hr", teaches:"Adapting the webhook pattern from Track F to Meta's specific payload format."},
+          {t:"Pass the message to Groq (openai/gpt-oss-20b) with a strict prompt: extract product name, quantity, and action (add/remove/check) as structured JSON.", time:"~50 min", teaches:"Structured extraction — turning free-text messages into a predictable shape your code can safely act on.", link:"https://console.groq.com/docs/text-chat#json-mode"},
+          {t:"Write the Python logic that updates the Supabase inventory table based on that structured response.", time:"~1 hr", teaches:"The write path — where a bad extraction can corrupt real business data, which is why validation matters here more than in Track F.", link:"https://supabase.com/docs/reference/python/update"},
+          {t:"Send a confirmation reply back to the user's phone via Meta's outbound API.", time:"~30 min", teaches:"Closing the loop — a write the user can't see confirmed is a write they won't trust."},
+          {t:"Deploy to Render (same app as Track M/F if you're consolidating hosting) and test with a live WhatsApp number.", time:"~40 min", teaches:"Running a production webhook end to end, not just against a local tunnel.", link:"https://render.com/docs/deploy-fastapi"}
+        ]
+      },
+      {
+        id:"w3", num:"W3", title:"Demo the trust-critical parts", weeks:"Week 6",
+        why:"Because this writes real data, your demo needs to show it failing safely, not just succeeding.",
+        tasks:[
+          {t:"Record a demo: texting 'Add 10 spark plugs to inventory' and showing the database update live.", time:"~25 min", teaches:"Proving the write path works end to end, on camera, with no editing tricks."},
+          {t:"Also demo what happens on an ambiguous or malformed message — it should ask for clarification, never guess and write bad data.", time:"~25 min", teaches:"This is the demo that actually earns trust — showing the failure mode is safe is more convincing than showing another success."}
+        ]
+      },
+      {
+        id:"w4", num:"W4", title:"Land the client (upsell first)", weeks:"Weeks 7–9",
+        why:"Your warmest leads are your own Track M and Track F clients — they already trust your work.",
+        tasks:[
+          {t:"Offer this as a paid upgrade to any existing M-Pesa or FAQ-bot client first.", time:"ongoing", teaches:"Why upselling an existing client is almost always faster and cheaper than cold outreach."},
+          {t:"For cold outreach, target auto parts shops, wholesalers, or boutiques that visibly manage orders manually over WhatsApp.", time:"ongoing", teaches:"Picking a niche where the manual-order pain is easy to spot from the outside, same instinct as Track F."},
+          {t:"Close on a higher setup fee reflecting the added complexity and trust required.", time:"ongoing", teaches:"Pricing for risk, not just hours — a bot that writes real data justifies a higher fee than one that only reads."}
+        ]
+      }
+    ]
+  }
+};
+
+/* ---------------- STORAGE (single consolidated key) ---------------- */
+let memoryStore = null;
+let storageWorking = null; // null = unknown, true/false once tested
+
+async function testStorage(){
+  if(!window.storage){ storageWorking = false; return false; }
+  try{
+    const probe = 'ok-' + Date.now();
+    await window.storage.set('sme_probe', probe, false);
+    const r = await window.storage.get('sme_probe', false);
+    storageWorking = !!(r && r.value === probe);
+  }catch(e){
+    console.error('Storage probe failed:', e);
+    storageWorking = false;
+  }
+  return storageWorking;
+}
+
+async function saveState(){
+  try{
+    if(window.storage){
+      await window.storage.set('sme_state', JSON.stringify(STATE), false);
+      storageWorking = true;
+      return true;
+    }
+  }catch(e){
+    console.error('Storage save error:', e);
+    storageWorking = false;
+  }
+  memoryStore = JSON.stringify(STATE);
+  return false;
+}
+async function loadState(){
+  try{
+    if(window.storage){
+      const r = await window.storage.get('sme_state', false);
+      return r ? JSON.parse(r.value) : null;
+    }
+  }catch(e){
+    console.warn('No saved state found yet (or storage unavailable):', e.message);
+  }
+  return memoryStore ? JSON.parse(memoryStore) : null;
+}
+
+function updateStorageBanner(){
+  const banner = document.getElementById('storageBanner');
+  const ok = document.getElementById('storageOk');
+  const okText = document.getElementById('storageOkText');
+  if(storageWorking === true){
+    banner.classList.remove('show');
+    ok.classList.remove('bad');
+    okText.textContent = 'Saving to your Claude account — safe to close this tab anytime.';
+  } else if(storageWorking === false){
+    banner.classList.add('show');
+    ok.classList.add('bad');
+    okText.textContent = 'Not saving — see the warning above.';
+  }
+}
+
+let STATE = { tasks:{}, notes:{}, openPhases:{ m1:true, f1:false, w1:false }, checkins:[], lastVisited:null };
+
+/* ---------------- RENDER ---------------- */
+function renderTrack(trackId){
+  const track = TRACKS[trackId];
+  const panel = document.getElementById('panel'+trackId);
+  const payHtml = track.pay.map(p => `
+    <div class="pay-item"><div class="pv">${p.v}</div><div class="pl">${p.l}</div></div>
+  `).join('');
+  const phasesHtml = track.phases.map(phase => {
+    const doneCount = phase.tasks.filter(t => STATE.tasks[phase.id+'|'+t.t]).length;
+    const isOpen = STATE.openPhases[phase.id] ? 'open' : '';
+    return `
+    <div class="phase ${isOpen}" id="phase-${phase.id}" style="--accent:${track.accent}">
+      <div class="phase-head" onclick="togglePhase('${trackId}','${phase.id}')">
+        <span class="phase-num">${phase.num}</span>
+        <div class="phase-title">
+          <div class="pt">${phase.title}</div>
+          <div class="pw">${phase.weeks}</div>
+        </div>
+        <div class="phase-progress">${doneCount}/${phase.tasks.length}</div>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="phase-body">
+        <div class="phase-inner">
+          <div class="why" style="--accent:${track.accent}">${phase.why}</div>
+          ${phase.tasks.map(task => {
+            const taskKey = phase.id+'|'+task.t;
+            const done = !!STATE.tasks[taskKey];
+            const noteVal = STATE.notes[taskKey] || '';
+            return `
+            <div class="task ${done?'done':''}">
+              <input type="checkbox" ${done?'checked':''} onchange="toggleTask('${trackId}','${escAttr(taskKey)}')">
+              <div class="task-body">
+                <div class="task-head">
+                  <div class="task-text">${task.t}</div>
+                  <span class="task-time" style="--accent:${track.accent}; --accent-dim:${track.accentDim}">${task.time}</span>
+                </div>
+                <div class="task-teaches"><b>Teaches:</b> ${task.teaches}</div>
+                <div class="task-row2">
+                  ${task.link ? `<a class="link-btn" href="${task.link}" target="_blank" rel="noopener" style="--accent:${track.accent}">🔗 open</a>` : ''}
+                  <button class="note-toggle" onclick="toggleNote('${escAttr(taskKey)}')">+ note</button>
+                </div>
+                <textarea class="note ${noteVal ? 'show':''}" id="note-${cssId(taskKey)}" placeholder="Notes, blockers, what you learned..." onblur="saveNote('${escAttr(taskKey)}', this.value)">${noteVal}</textarea>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="track-brief" style="border-left:2px solid ${track.accent}">${track.brief}</div>
+    <div class="pay-box">${payHtml}</div>
+    ${phasesHtml}
+  `;
+}
+
+function escAttr(s){ return s.replace(/'/g, "\\'"); }
+function cssId(s){ return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+
+async function togglePhase(trackId, id){
+  STATE.openPhases[id] = !STATE.openPhases[id];
+  if(STATE.openPhases[id]){
+    STATE.lastVisited = { track: trackId, phase: id, ts: Date.now() };
+  }
+  await saveState();
+  updateStorageBanner();
+  renderTrack(trackId);
+  updateResumeBanner();
+}
+function toggleNote(key){
+  const el = document.getElementById('note-'+cssId(key));
+  el.classList.toggle('show');
+  if(el.classList.contains('show')) el.focus();
+}
+async function saveNote(key, val){
+  STATE.notes[key] = val;
+  await saveState();
+  showToast('Note saved');
+}
+async function toggleTask(trackId, key){
+  STATE.tasks[key] = !STATE.tasks[key];
+  STATE.lastVisited = { track: trackId, phase: key.split('|')[0], ts: Date.now() };
+  await saveState();
+  updateStorageBanner();
+  renderTrack(trackId);
+  updateDashboard();
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function allTasks(){
+  let all = [];
+  Object.values(TRACKS).forEach(tr => tr.phases.forEach(p => p.tasks.forEach(t => all.push(p.id+'|'+t.t))));
+  return all;
+}
+function updateDashboard(){
+  const all = allTasks();
+  const done = all.filter(k => STATE.tasks[k]).length;
+  const pct = all.length ? Math.round((done/all.length)*100) : 0;
+  document.getElementById('overallPct').textContent = pct + '%';
+  document.getElementById('tasksDone').textContent = done + '/' + all.length;
+  document.getElementById('streakCount').textContent = computeStreak();
+}
+function computeStreak(){
+  if(!STATE.checkins.length) return 0;
+  const days = [...new Set(STATE.checkins)].sort();
+  let streak = 1;
+  for(let i=days.length-1;i>0;i--){
+    const d1 = new Date(days[i]), d2 = new Date(days[i-1]);
+    const diff = (d1-d2)/(1000*60*60*24);
+    if(diff===1) streak++; else break;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const last = days[days.length-1];
+  const gap = (new Date(today)-new Date(last))/(1000*60*60*24);
+  if(gap>1) return 0;
+  return streak;
+}
+async function checkInToday(){
+  const today = new Date().toISOString().slice(0,10);
+  if(!STATE.checkins.includes(today)){
+    STATE.checkins.push(today);
+    await saveState();
+    updateDashboard();
+    updateCheckinBtn();
+    showToast('Nice — day logged. Keep the streak.');
+  }
+}
+function updateCheckinBtn(){
+  const today = new Date().toISOString().slice(0,10);
+  const btn = document.getElementById('checkinBtn');
+  if(STATE.checkins.includes(today)){
+    btn.textContent = "✓ Logged today";
+    btn.disabled = true;
+  } else {
+    btn.textContent = "Mark today as worked";
+    btn.disabled = false;
+  }
+}
+
+/* ---------------- RESUME BANNER ---------------- */
+function updateResumeBanner(){
+  const banner = document.getElementById('resumeBanner');
+  const txt = document.getElementById('resumeText');
+  if(STATE.lastVisited && STATE.lastVisited.track !== currentTrack){
+    const tr = TRACKS[STATE.lastVisited.track];
+    const phase = tr.phases.find(p => p.id === STATE.lastVisited.phase);
+    txt.textContent = `${tr.name}${phase ? ' — ' + phase.title : ''}`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+function jumpToResume(){
+  if(!STATE.lastVisited) return;
+  showTrack(STATE.lastVisited.track);
+  document.getElementById('resumeBanner').classList.remove('show');
+  setTimeout(()=>{
+    const el = document.getElementById('phase-'+STATE.lastVisited.phase);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+/* ---------------- TRACK NAV ---------------- */
+let currentTrack = 'M';
+function showTrack(id){
+  currentTrack = id;
+  ['M','F','W'].forEach(k => {
+    document.getElementById('panel'+k).classList.toggle('visible', id===k);
+    document.getElementById('nav'+k).classList.toggle('active', id===k);
+  });
+  renderTrack(id);
+  updateResumeBanner();
+}
+
+/* ---------------- MISC UI ---------------- */
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+}
+function exportProgress(){
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sme-roadmap-progress.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+async function resetProgress(){
+  if(!confirm('Reset all checkboxes, notes, and streak? This cannot be undone.')) return;
+  STATE = { tasks:{}, notes:{}, openPhases:{ m1:true, f1:false, w1:false }, checkins:[], lastVisited:null };
+  await saveState();
+  renderTrack(currentTrack);
+  updateDashboard();
+  updateCheckinBtn();
+  updateResumeBanner();
+}
+
+/* ---------------- INIT ---------------- */
+async function init(){
+  await testStorage();
+  updateStorageBanner();
+  const saved = await loadState();
+  if(saved){
+    STATE = {
+      tasks: saved.tasks || {},
+      notes: saved.notes || {},
+      openPhases: saved.openPhases || { m1:true, f1:false, w1:false },
+      checkins: saved.checkins || [],
+      lastVisited: saved.lastVisited || null
+    };
+  }
+  const startTrack = (STATE.lastVisited && STATE.lastVisited.track) ? STATE.lastVisited.track : 'M';
+  showTrack(startTrack);
+  updateDashboard();
+  updateCheckinBtn();
+  updateResumeBanner();
+  if(STATE.lastVisited){
+    setTimeout(()=>{
+      const el = document.getElementById('phase-'+STATE.lastVisited.phase);
+      if(el && STATE.lastVisited.track === startTrack) el.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 300);
+  }
+}
+init();
+</script>
+</body>
+</html>

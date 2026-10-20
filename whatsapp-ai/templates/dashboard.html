@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Retail OS Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: #f8fafc; color: #1e293b; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Layout styling elements */
+        .sidebar-drawer { width: 260px; background: #0f172a; color: white; display: flex; flex-direction: column; padding: 24px; justify-content: space-between; }
+        .nav-header h2 { font-size: 18px; margin-bottom: 25px; color: #f8fafc; letter-spacing: 0.5px; }
+        .nav-link { display: flex; align-items: center; padding: 12px 16px; color: #94a3b8; text-decoration: none; border-radius: 8px; margin-bottom: 6px; font-weight: 500; cursor: pointer; transition: 0.1s; }
+        .nav-link:hover { background: #1e293b; color: white; }
+        .nav-link.active { background: #2563eb; color: white; }
+        .session-info-card { background: #1e293b; padding: 14px; border-radius: 8px; font-size: 12px; }
+
+        /* Workspace Core Window Panels */
+        .viewport-wrapper { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .top-nav-banner { height: 70px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; }
+        .view-panel-container { flex: 1; padding: 35px; overflow-y: auto; display: none; }
+        .view-panel-container.active { display: block; }
+
+        /* Layout Grid and Functional Matrices Elements */
+        .matrix-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .metric-block { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.01); }
+        .metric-block h4 { margin: 0; font-size: 12px; color: #64748b; text-transform: uppercase; }
+        .metric-block p { margin: 8px 0 0 0; font-size: 24px; font-weight: bold; color: #0f172a; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; margin-top: 15px; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; }
+
+        .input-group { margin-bottom: 14px; }
+        .input-group label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+        .input-control { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
+        .input-control:focus { border-color: #2563eb; }
+        .btn-prime { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-prime:hover { background: #1d4ed8; }
+
+        /* Floating AI Companion elements */
+        .ai-floating-node { position: fixed; bottom: 25px; right: 25px; width: 55px; height: 55px; background: #8b5cf6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3); cursor: pointer; z-index: 99; }
+        .ai-drawer-frame { position: fixed; bottom: 95px; right: 25px; width: 340px; height: 440px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; display: none; flex-direction: column; z-index: 99; overflow: hidden; }
+
+        /* 58mm Thermal Printer Emulation Overlays for Native Receipts Formatting */
+        @media print {
+            body * { visibility: hidden; }
+            #receiptPrinterArea, #receiptPrinterArea * { visibility: visible; }
+            #receiptPrinterArea { position: absolute; left: 0; top: 0; width: 58mm; font-family: monospace; font-size: 12px; line-height: 1.2; color: black; background: white; padding: 5mm; }
+            .sidebar-drawer, .top-nav-banner, .view-panel-container, .ai-floating-node { display: none !important; }
+        }
+        /* Full-page report printing (separate from the 58mm receipt path above) */
+        body.printing-report * { visibility: hidden; }
+        body.printing-report #dailySalesReportPrintArea, body.printing-report #dailySalesReportPrintArea * { visibility: visible; }
+        body.printing-report #dailySalesReportPrintArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
+        body.printing-report .no-print { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH LANDING DIALOG MATRIX FOR THE ENVIRONMENT OVERLAY -->
+    <div id="authGateModal" style="position:fixed; inset:0; background:rgba(15,23,42,0.95); z-index:9999; display:flex; align-items:center; justify-content:center;">
+        <div style="background:white; padding:35px; border-radius:12px; width:360px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+            <h2 style="margin-top:0; text-align:center;">Select Workspace Access</h2>
+            <div class="input-group">
+                <label>System Role Tier</label>
+                <select id="authRoleSelector" class="input-control">
+                    <option value="admin">Administrator (Full Rights)</option>
+                    <option value="employee">Store Employee (Restricted Gates)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Security Keyphrase Password</label>
+                <input type="password" id="authPasswordKey" class="input-control" placeholder="••••••••">
+            </div>
+            <button class="btn-prime" style="width:100%; margin-top:10px;" onclick="unlockSystemWorkspace()">Authorize Gateway Session</button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR DRAWER INTERFACES MENU PANEL -->
+    <div class="sidebar-drawer">
+        <div class="nav-header">
+            <h2>📊 SuiteDeck Enterprise</h2>
+            <div class="nav-link active" onclick="navigateView('register-view-tab', this)">Register Counter</div>
+            <div class="nav-link" onclick="navigateView('reports-view-tab', this)">Reports Console</div>
+            <div class="nav-link" onclick="navigateView('products-view-tab', this)">Inventory Catalog</div>
+            <div class="nav-link" onclick="navigateView('invoices-view-tab', this)">Invoices & Debt</div>
+        </div>
+        <div class="session-info-card">
+            <span>Active Operator:</span>
+            <div id="activeUserLabel" style="font-weight:bold; color:#f8fafc; margin-top:2px;">Erickson Wachira</div>
+            <div id="activeRoleLabel" style="font-size:11px; color:#38bdf8; text-transform:uppercase; font-weight:600; margin-top:2px;">ADMIN CLEARANCE</div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CANVAS VIEWPORT CONTAINER -->
+    <div class="viewport-wrapper">
+        <div class="top-nav-banner">
+            <div style="font-weight:600; font-size:16px;" id="currentPanelHeaderTitle">Register Counter</div>
+            <div>Database Sync State: <span id="syncStatusLabel" style="color:#f59e0b; font-weight:bold;">🟡 CONNECTING...</span></div>
+        </div>
+
+        <!-- TAB 1: ADVANCED SALES CONSOLE COUNTER AND ACCOUNTING ROUTING -->
+        <div id="register-view-tab" class="view-panel-container active">
+            <div style="display:flex; gap:24px; height:100%;">
+                <div style="flex:2; background:white; padding:24px; border-radius:10px; border:1px solid #e2e8f0;">
+                    <input type="text" id="posProductFilterInput" class="input-control" placeholder="Type product name or use external hardware scan trigger query parameters..." style="padding:14px; margin-bottom:20px;" oninput="filterGridCatalogView()">
+                    <div id="posGridCatalogDisplayArea" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px;"></div>
+                </div>
+                
+                <div style="flex:1; background:white; padding:24px; border-radius:10px; border:1px solid #e2e8f0; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <h3 style="margin-top:0; border-bottom:1px solid #f1f5f9; padding-bottom:10px;">Register Basket</h3>
+                        <div id="cartBasketItemsContainer" style="max-height:220px; overflow-y:auto; margin-bottom:15px;"></div>
+                    </div>
+                    <div>
+                        <div class="input-group">
+                            <label><input type="checkbox" id="billingDebtToggleSwitch" onchange="toggleDebtInputGroupView()"> Log Transaction as Customer Debt Profile</label>
+                        </div>
+                        <div id="debtorInputsFormGroup" style="display:none; background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #e2e8f0; margin-bottom:12px;">
+                            <div class="input-group"><label>Account Customer Name</label><input type="text" id="debtorCustomerName" class="input-control"></div>
+                            <div class="input-group"><label>Account Contact Phone</label><input type="text" id="debtorCustomerPhone" class="input-control"></div>
+                        </div>
+                        <div id="standardPaymentMethodsGroup">
+                            <div class="input-group">
+                                <label>Payment Mode Routing</label>
+                                <select id="paymentSelectorNode" class="input-control" onchange="toggleBankInputNodeView()">
+                                    <option value="Cash">Cash Handover</option>
+                                    <option value="M-Pesa">M-Pesa Mobile Ledger</option>
+                                    <option value="Bank">Bank Wire Transfer</option>
+                                </select>
+                            </div>
+                            <div class="input-group" id="bankRouteInputGroup" style="display:none;"><label>Target Bank Brand Name</label><input type="text" id="bankBrandNameInput" class="input-control"></div>
+                        </div>
+                        <div class="input-group" style="margin-top:10px;">
+                            <label><input type="checkbox" id="useEtrVatSwitch" onchange="calculateCartMetrics()"> Compute 16% ETR Kenyan VAT Compliance</label>
+                        </div>
+                        <div style="font-size:18px; font-weight:bold; margin:15px 0; color:#0f172a; display:flex; justify-content:space-between;">
+                            <span>Total Due:</span><span id="cartGrandTotalLabel">KSH 0.00</span>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-prime" style="flex:2; background:#10b981;" id="checkoutActionButton" onclick="dispatchCartCheckout()">Complete Checkout</button>
+                            <button class="btn-prime" style="flex:1; background:#ef4444;" onclick="wipeRegisterCartState()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: REPORTS CONSOLE VIEW FILTER MATRIX -->
+        <div id="reports-view-tab" class="view-panel-container">
+            <div style="margin-bottom:24px;">
+                <button class="btn-prime" onclick="loadAnalyticsReportSegment('daily')">Daily Range</button>
+                <button class="btn-prime" style="background:#475569;" onclick="loadAnalyticsReportSegment('weekly')">Weekly Range</button>
+                <button class="btn-prime" style="background:#475569;" onclick="loadAnalyticsReportSegment('monthly')">Monthly Segment</button>
+                <button class="btn-prime" style="background:#475569;" onclick="loadAnalyticsReportSegment('yearly')">Yearly Aggregate</button>
+            </div>
+            <div class="matrix-3">
+                <div class="metric-block"><h4>Segment Aggregated Revenue</h4><p id="repRevenueLabel">KSH 0.00</p></div>
+                <div class="metric-block" style="border-left:4px solid #10b981;"><h4>Segment Net Profit</h4><p id="repProfitLabel" style="color:#10b981;">KSH 0.00</p></div>
+                <div class="metric-block"><h4>Volume Items Dispatched</h4><p id="repUnitsLabel">0 Units</p></div>
+                <div class="metric-block" style="border-left:4px solid #ef4444;"><h4>Completely Out Of Stock</h4><p id="repDepletedCountLabel">0 Product Lines</p></div>
+            </div>
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+                <div class="metric-block">
+                    <div style="font-weight:bold; margin-bottom:15px;">Top Selling Inventory Units Velocity</div>
+                    <div style="position:relative; height:220px;"><canvas id="topMovingItemsBarChart"></canvas></div>
+                </div>
+                <div class="metric-block">
+                    <h4>Depleted Inventory Product List</h4>
+                    <div id="depletedProductsTextList" style="font-size:13px; color:#ef4444; font-weight:600; line-height:1.6; margin-top:10px;"></div>
+                </div>
+            </div>
+            <div class="metric-block" style="margin-top:20px;" id="dailySalesReportPrintArea">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h4 style="margin:0;">Itemized Daily Sales Log</h4>
+                    <button class="btn-prime no-print" style="background:#475569;" onclick="printDailySalesReport()">🖨️ Print This Report</button>
+                </div>
+                <table id="dailySalesReportTable">
+                    <thead><tr><th>Time</th><th>Item</th><th>Qty</th><th>Total (KSH)</th><th>Profit (KSH)</th><th>Sold By</th><th>Payment</th></tr></thead>
+                    <tbody id="dailySalesReportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: INVENTORY CATALOG AND SAFE CREATION ENGINE -->
+        <div id="products-view-tab" class="view-panel-container">
+            <div style="display:flex; gap:20px; margin-bottom:30px;">
+                <div class="metric-block" style="flex:1;">
+                    <h4 style="margin-bottom:12px;">Map New Item Type Row (De-duplication Protected)</h4>
+                    <div class="input-group"><label>Product Component Name</label><input type="text" id="pAddName" class="input-control"></div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="input-group" style="flex:1;"><label>Buying Price Cost</label><input type="number" id="pAddBuyPrice" class="input-control"></div>
+                        <div class="input-group" style="flex:1;"><label>Selling Retail Valuation</label><input type="number" id="pAddSellPrice" class="input-control"></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="input-group" style="flex:1;"><label>Initial Units Stock Count</label><input type="number" id="pAddQty" class="input-control"></div>
+                        <div class="input-group" style="flex:1;"><label>Manufacturer Part Number Reference</label><input type="text" id="pAddPartNum" class="input-control"></div>
+                    </div>
+                    <button class="btn-prime" onclick="submitNewProductRowCreation()">Create Product Row</button>
+                </div>
+                
+                <div class="metric-block" style="flex:1;">
+                    <h4 style="margin-bottom:12px;">Replenish Stock Units (Employee Restricted Reduction Protection)</h4>
+                    <div class="input-group"><label>Target Catalog Component</label><select id="replenishProductDropdownSelector" class="input-control"></select></div>
+                    <div class="input-group"><label>Quantity Adjustment Level Delta</label><input type="number" id="replenishQuantityDeltaInput" class="input-control" placeholder="Positive increments. Negatives blocked for staff."></div>
+                    <button class="btn-prime" style="background:#10b981;" onclick="submitStockLevelReplenishmentChange()">Commit Level Adjustment</button>
+                </div>
+            </div>
+            <table>
+                <thead><tr><th>ID</th><th>Component Name</th><th>Buying Valuation</th><th>Selling Price</th><th>Available Balance Units</th><th>Part Number</th></tr></thead>
+                <tbody id="inventoryMasterTableDataBody"></tbody>
+            </table>
+        </div>
+
+        <!-- TAB 4: INVOICES DRILL DOWN MANAGEMENT PANEL -->
+        <div id="invoices-view-tab" class="view-panel-container">
+            <div style="display:flex; gap:20px;">
+                <div style="flex:2;">
+                    <h3>Unpaid Debt & Customer Credit Accounts Ledger</h3>
+                    <table>
+                        <thead><tr><th>ID</th><th>Customer Target Account</th><th>Contact Phone Link</th><th>Total Unpaid Debt Metric</th><th>Payment Threshold Limit</th><th>Action Control</th></tr></thead>
+                        <tbody id="invoicesMasterTableDataBody"></tbody>
+                    </table>
+                </div>
+                <div style="flex:1; background:white; border:1px solid #e2e8f0; border-radius:10px; padding:20px; display:none;" id="invoiceDrilldownDetailSidePanel">
+                    <h3 id="drilldownCustomerNameHeader" style="margin-top:0;">Account Breakdown</h3>
+                    <div id="drilldownItemsHistoryDetailsList" style="font-size:13px; line-height:1.6; margin-bottom:20px; max-height:200px; overflow-y:auto; border-bottom:1px solid #f1f5f9; padding-bottom:10px;"></div>
+                    <div class="input-group">
+                        <label>Collect Customer Partial Payment Cash Inflow</label>
+                        <input type="number" id="debtPaymentCollectionAmountInput" class="input-control" placeholder="Amount (KSH)">
+                    </div>
+                    <button class="btn-prime" style="background:#10b981; width:100%;" onclick="submitInvoiceDebtPaymentCollection()">Process Account Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING AI COPILOT WORKSPACE ASSISTANT PANEL UI -->
+    <div class="ai-floating-node" onclick="toggleAICopilotInterfaceFrame()">✨</div>
+    <div class="ai-drawer-frame" id="aiAssistantInterfaceDrawerContainer">
+        <div style="background:#8b5cf6; color:white; padding:15px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+            <span>Ecosystem Copilot Widget</span><span style="cursor:pointer;" onclick="toggleAICopilotInterfaceFrame()">✕</span>
+        </div>
+        <div id="aiCopilotChatLogsDisplayArea" style="flex:1; padding:15px; overflow-y:auto; background:#faf5ff; font-size:13px;"></div>
+        <div style="padding:10px; border-top:1px solid #e2e8f0; display:flex; gap:8px;">
+            <input type="text" id="aiCopilotCommandInputText" class="input-control" placeholder="Ask copilot to check inventory visibility..." style="padding:8px;">
+            <button class="btn-prime" style="background:#8b5cf6; padding:8px 12px;" onclick="dispatchAICopilotCommand()">Ask</button>
+        </div>
+    </div>
+
+    <!-- RAW TEXT 58MM THERMAL PRINTER HARDWARE RECEIPT EMULATOR AREA -->
+    <div id="receiptPrinterArea" style="display:none;"></div>
+
+    <!-- MAIN CONTROL SCRIPT INTERFACE INTERACTION PROTOCOLS -->
+    <script>
+        let cachedCatalogRows = [];
+        let runningRegisterCartArray = [];
+        let activeReportChartInstanceObj = null;
+        let designatedUserRoleSessionToken = 'admin';
+        let targetedActiveInvoiceIdDrilldown = null;
+
+        function unlockSystemWorkspace() {
+            const role = document.getElementById('authRoleSelector').value;
+            designatedUserRoleSessionToken = role;
+            document.getElementById('activeUserLabel').innerText = role === 'admin' ? "Erickson Wachira" : "Store Counter Employee";
+            document.getElementById('activeRoleLabel').innerText = role === 'admin' ? "ADMIN CLEARANCE" : "EMPLOYEE RESTRICTED LEVEL";
+            document.getElementById('authGateModal').style.display = 'none';
+            silentDatabaseStateBackgroundPolling();
+        }
+
+        function navigateView(tabId, element) {
+            document.querySelectorAll('.view-panel-container').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+            document.getElementById('currentPanelHeaderTitle').innerText = element.innerText;
+            if(tabId === 'reports-view-tab') loadAnalyticsReportSegment('daily');
+        }
+
+        function toggleDebtInputGroupView() {
+            const isDebt = document.getElementById('billingDebtToggleSwitch').checked;
+            document.getElementById('debtorInputsFormGroup').style.display = isDebt ? 'block' : 'none';
+            document.getElementById('standardPaymentMethodsGroup').style.display = isDebt ? 'none' : 'block';
+        }
+
+        function toggleBankInputNodeView() {
+            const method = document.getElementById('paymentSelectorNode').value;
+            document.getElementById('bankRouteInputGroup').style.display = method === 'Bank' ? 'block' : 'none';
+        }
+
+        function toggleAICopilotInterfaceFrame() {
+            const container = document.getElementById('aiAssistantInterfaceDrawerContainer');
+            container.style.display = (container.style.display === 'none' || !container.style.display) ? 'flex' : 'none';
+        }
+
+        // --- REAL-TIME SYNC BUS CLIENT ---
+        // Connects to the backend /ws/sync channel. When a sale happens via
+        // WhatsApp, the AI widget, or another counter tab, the backend pushes
+        // an event here immediately instead of waiting for the poll interval.
+        let syncSocket = null;
+        let reconnectTimer = null;
+        const POLL_FALLBACK_MS = 3000;
+        let pollFallbackInterval = null;
+
+        function setSyncStatus(state) {
+            const label = document.getElementById('syncStatusLabel');
+            if (state === 'live') {
+                label.innerText = '🟢 LIVE SYNCED';
+                label.style.color = '#10b981';
+            } else if (state === 'polling') {
+                label.innerText = '🟡 POLLING (RECONNECTING)';
+                label.style.color = '#f59e0b';
+            } else {
+                label.innerText = '🔴 OFFLINE';
+                label.style.color = '#ef4444';
+            }
+        }
+
+        function connectSyncSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            syncSocket = new WebSocket(`${proto}//${window.location.host}/ws/sync`);
+
+            syncSocket.onopen = () => {
+                setSyncStatus('live');
+                clearInterval(pollFallbackInterval); // WS is live, stop the 3s fallback poll
+                pollFallbackInterval = null;
+            };
+
+            syncSocket.onmessage = (msg) => {
+                try {
+                    const { event, payload } = JSON.parse(msg.data);
+                    handleSyncEvent(event, payload);
+                } catch (e) { console.error("Malformed sync event:", e); }
+            };
+
+            syncSocket.onclose = () => {
+                setSyncStatus('polling');
+                startPollFallback(); // keep the dashboard usable even if the socket drops
+                reconnectTimer = setTimeout(connectSyncSocket, 3000);
+            };
+
+            syncSocket.onerror = () => syncSocket.close();
+        }
+
+        function startPollFallback() {
+            if (pollFallbackInterval) return;
+            pollFallbackInterval = setInterval(silentDatabaseStateBackgroundPolling, POLL_FALLBACK_MS);
+        }
+
+        function handleSyncEvent(event, payload) {
+            // Any mutation anywhere (counter sale, WhatsApp sale, stock edit,
+            // debt payment) refreshes the shared state immediately.
+            silentDatabaseStateBackgroundPolling();
+            if (document.getElementById('reports-view-tab').classList.contains('active')) {
+                loadAnalyticsReportSegment('daily');
+            }
+            if (event === 'sale_completed' && payload.source === 'whatsapp') {
+                showSyncToast(`📱 WhatsApp sale: ${payload.product_name} x${payload.qty} by ${payload.operator}`);
+            } else if (event === 'stock_adjusted') {
+                showSyncToast(`📦 Stock updated: ${payload.name} → ${payload.new_stock_count} units`);
+            } else if (event === 'invoice_updated') {
+                showSyncToast(`💰 Payment recorded for ${payload.customer}`);
+            }
+        }
+
+        function showSyncToast(text) {
+            const toast = document.createElement('div');
+            toast.innerText = text;
+            toast.style.cssText = 'position:fixed; top:20px; right:20px; background:#0f172a; color:white; padding:12px 18px; border-radius:8px; font-size:13px; z-index:9998; box-shadow:0 8px 20px rgba(0,0,0,0.2);';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        // Silent Database State Background Polling (fallback path only; the
+        // WebSocket above is the primary sync mechanism when connected)
+        async function silentDatabaseStateBackgroundPolling() {
+            try {
+                const res = await fetch('/api/products');
+                if(!res.ok) return;
+                cachedCatalogRows = await res.json();
+                renderCatalogGridViewElements();
+                renderInventoryDataTablesLayoutRows();
+                loadInvoicesLedgerDataRows();
+            } catch(e) { console.error("Sync channel poll exception dropped:", e); }
+        }
+        connectSyncSocket();
+        silentDatabaseStateBackgroundPolling(); // one immediate load on page mount
+
+        function renderCatalogGridViewElements() {
+            const area = document.getElementById('posGridCatalogDisplayArea');
+            area.innerHTML = '';
+            cachedCatalogRows.forEach(p => {
+                area.innerHTML += `
+                    <div class="metric-block" style="cursor:pointer; padding:12px; border:1px solid #cbd5e1;" onclick="addCartItemToRegisterArray('${p.name}')">
+                        <div style="font-weight:bold; font-size:13px;">${p.name}</div>
+                        <div style="color:#2563eb; font-weight:bold; font-size:12px; margin-top:4px;">KSH ${p.selling_price || p.price}</div>
+                        <div style="font-size:11px; color:${p.stock_count === 0 ? '#ef4444' : '#64748b'}; font-weight:600;">Stock: ${p.stock_count} units</div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterGridCatalogView() {
+            const term = document.getElementById('posProductFilterInput').value.toLowerCase().trim();
+            const cards = document.getElementById('posGridCatalogDisplayArea').children;
+            cachedCatalogRows.forEach((p, idx) => {
+                const match = p.name.toLowerCase().includes(term) || (p.part_number && p.part_number.toLowerCase().includes(term));
+                if(cards[idx]) cards[idx].style.display = match ? 'block' : 'none';
+            });
+        }
+
+        function addCartItemToRegisterArray(name) {
+            const product = cachedCatalogRows.find(p => p.name === name);
+            const entry = runningRegisterCartArray.find(c => c.name === name);
+            
+            if(entry) {
+                if(entry.qty + 1 > product.stock_count) return alert("❌ Stock limit hit! You cannot add more units than what's available in inventory.");
+                entry.qty += 1;
+            } else {
+                if(product.stock_count === 0) return alert("❌ Item out of stock!");
+                runningRegisterCartArray.push({ name: product.name, price: parseFloat(product.selling_price || product.price), qty: 1 });
+            }
+            renderRegisterCartLayoutElements();
+        }
+
+        function updateCartItemQtyDelta(name, delta) {
+            const product = cachedCatalogRows.find(p => p.name === name);
+            const entry = runningRegisterCartArray.find(c => c.name === name);
+            if(!entry) return;
+
+            if(entry.qty + delta > product.stock_count) return alert("❌ Stock out warning: Insufficient rows matching requests.");
+            entry.qty += delta;
+            if(entry.qty <= 0) runningRegisterCartArray = runningRegisterCartArray.filter(c => c.name !== name);
+            renderRegisterCartLayoutElements();
+        }
+
+        function renderRegisterCartLayoutElements() {
+            const box = document.getElementById('cartBasketItemsContainer');
+            box.innerHTML = '';
+            runningRegisterCartArray.forEach(c => {
+                box.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:13px; background:#f8fafc; padding:6px; border-radius:4px;">
+                        <div><div><b>${c.name}</b></div><div style="color:#64748b;">KSH ${c.price} each</div></div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="btn-prime" style="padding:2px 6px; background:#cbd5e1; color:#0f172a;" onclick="updateCartItemQtyDelta('${c.name}', -1)">-</button>
+                            <b>${c.qty}</b>
+                            <button class="btn-prime" style="padding:2px 6px; background:#cbd5e1; color:#0f172a;" onclick="updateCartItemQtyDelta('${c.name}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            calculateCartMetrics();
+        }
+
+        function calculateCartMetrics() {
+            let subtotal = 0;
+            runningRegisterCartArray.forEach(c => subtotal += (c.price * c.qty));
+            if(document.getElementById('useEtrVatSwitch').checked) subtotal = subtotal * 1.16;
+            document.getElementById('cartGrandTotalLabel').innerText = `KSH ${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            
+            // Freeze checkout if cart violates stock thresholds
+            let violation = false;
+            runningRegisterCartArray.forEach(c => {
+                const item = cachedCatalogRows.find(p => p.name === c.name);
+                if(item && c.qty > item.stock_count) violation = true;
+            });
+            document.getElementById('checkoutActionButton').disabled = violation;
+            document.getElementById('checkoutActionButton').style.background = violation ? '#ef4444' : '#10b981';
+        }
+
+        async function dispatchCartCheckout() {
+            if(!runningRegisterCartArray.length) return alert("Cart empty.");
+            const payload = {
+                items: runningRegisterCartArray,
+                is_debt: document.getElementById('billingDebtToggleSwitch').checked,
+                customer_name: document.getElementById('debtorCustomerName').value || null,
+                customer_phone: document.getElementById('debtorCustomerPhone').value || null,
+                payment_method: document.getElementById('paymentSelectorNode').value,
+                bank_name: document.getElementById('bankBrandNameInput').value || null,
+                use_etr: document.getElementById('useEtrVatSwitch').checked,
+                operator: document.getElementById('activeUserLabel').innerText
+            };
+
+            const res = await fetch('/api/sales/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+            if(res.ok) {
+                const data = await res.json();
+                alert("Transaction Processed Successfully!");
+                triggerReceiptThermalEmulationPrint(data);
+                wipeRegisterCartState();
+                silentDatabaseStateBackgroundPolling();
+            } else { const err = await res.json(); alert(`Error: ${err.detail}`); }
+        }
+
+        function triggerReceiptThermalEmulationPrint(data) {
+            const area = document.getElementById('receiptPrinterArea');
+            let itemsLines = '';
+            data.receipt_data.forEach(i => {
+                itemsLines += `${i.name} x${i.qty}\n   @ KSH ${i.unit_price} -> KSH ${i.unit_price * i.qty}\n`;
+            });
+            area.innerHTML = `
+================================
+     SUITEDECK STORE POS        
+   Nairobi, Kenya Counter       
+================================
+DATE: ${new Date().toLocaleString()}
+OPERATOR: ${document.getElementById('activeUserLabel').innerText}
+--------------------------------
+ITEMS:
+${itemsLines}
+--------------------------------
+ETR TAX STATUS: REGULATED 16%
+TOTAL AMOUNT CHARGED: 
+   KSH ${data.total.toLocaleString()}
+================================
+ Thank you for shopping with us!
+================================
+            `;
+            window.print();
+        }
+
+        function wipeRegisterCartState() {
+            runningRegisterCartArray = [];
+            document.getElementById('billingDebtToggleSwitch').checked = false;
+            document.getElementById('debtorCustomerName').value = '';
+            document.getElementById('debtorCustomerPhone').value = '';
+            document.getElementById('useEtrVatSwitch').checked = false;
+            toggleDebtInputGroupView();
+            renderRegisterCartLayoutElements();
+        }
+
+        async function submitNewProductRowCreation() {
+            const payload = {
+                name: document.getElementById('pAddName').value,
+                buying_price: parseFloat(document.getElementById('pAddBuyPrice').value || 0),
+                selling_price: parseFloat(document.getElementById('pAddSellPrice').value || 0),
+                stock_count: parseInt(document.getElementById('pAddQty').value || 0),
+                part_number: document.getElementById('pAddPartNum').value || null,
+                role: designatedUserRoleSessionToken
+            };
+
+            const res = await fetch('/api/products/secure-create', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+            if(res.ok) {
+                alert("New product row appended cleanly.");
+                silentDatabaseStateBackgroundPolling();
+            } else { const err = await res.json(); alert(`Creation Denied: ${err.detail}`); }
+        }
+
+        async function submitStockLevelReplenishmentChange() {
+            const payload = {
+                product_id: parseInt(document.getElementById('replenishProductDropdownSelector').value),
+                qty_delta: parseInt(document.getElementById('replenishQuantityDeltaInput').value || 0),
+                role: designatedUserRoleSessionToken,
+                operator: document.getElementById('activeUserLabel').innerText
+            };
+
+            const res = await fetch('/api/products/modify-inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+            if(res.ok) {
+                alert("Inventory replenishment logged.");
+                silentDatabaseStateBackgroundPolling();
+            } else { const err = await res.json(); alert(`Security Restriction Block: ${err.detail}`); }
+        }
+
+        function renderInventoryDataTablesLayoutRows() {
+            const tbody = document.getElementById('inventoryMasterTableDataBody');
+            const selector = document.getElementById('replenishProductDropdownSelector');
+            tbody.innerHTML = '';
+            selector.innerHTML = '';
+
+            cachedCatalogRows.forEach(p => {
+                tbody.innerHTML += `<tr><td>${p.id}</td><td><b>${p.name}</b></td><td>KSH ${p.buying_price || 0}</td><td>KSH ${p.selling_price || p.price}</td><td><b>${p.stock_count} units</b></td><td>${p.part_number || 'N/A'}</td></tr>`;
+                selector.innerHTML += `<option value="${p.id}">${p.name} (Part: ${p.part_number || 'None'})</option>`;
+            });
+        }
+
+        async function loadInvoicesLedgerDataRows() {
+            const res = await fetch('/api/invoices');
+            const invoices = await res.json();
+            const tbody = document.getElementById('invoicesMasterTableDataBody');
+            tbody.innerHTML = '';
+            invoices.forEach(i => {
+                tbody.innerHTML += `<tr><td>#${i.id}</td><td><b>${i.customer_name}</b></td><td>${i.customer_phone}</td><td style="color:#ef4444; font-weight:600;">KSH ${i.amount_due}</td><td>${i.due_date}</td><td><button class="btn-prime" style="padding:4px 8px; font-size:12px;" onclick="drilldownInvoiceAccountCard(${i.id})">Inspect</button></td></tr>`;
+            });
+        }
+
+        async function drilldownInvoiceAccountCard(id) {
+            targetedActiveInvoiceIdDrilldown = id;
+            const res = await fetch(`/api/invoices/drilldown/${id}`);
+            const data = await res.json();
+            
+            document.getElementById('drilldownCustomerNameHeader').innerText = data.customer;
+            const itemsBox = document.getElementById('drilldownItemsHistoryDetailsList');
+            itemsBox.innerHTML = '<h4>Taken Items History:</h4>';
+            
+            data.items.forEach(i => {
+                itemsBox.innerHTML += `<div>📦 ${i.name} x${i.qty} (@ KSH ${i.unit_price})</div>`;
+            });
+            document.getElementById('invoiceDrilldownDetailSidePanel').style.display = 'block';
+        }
+
+        async function submitInvoiceDebtPaymentCollection() {
+            const payload = {
+                invoice_id: targetedActiveInvoiceIdDrilldown,
+                amount_paid: parseFloat(document.getElementById('debtPaymentCollectionAmountInput').value || 0)
+            };
+            const res = await fetch('/api/invoices/collect-payment', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+            if(res.ok) {
+                alert("Payment credited successfully.");
+                document.getElementById('invoiceDrilldownDetailSidePanel').style.display = 'none';
+                silentDatabaseStateBackgroundPolling();
+            }
+        }
+
+        async function loadAnalyticsReportSegment(range) {
+            const res = await fetch(`/api/reports/analytics?range_filter=${range}`);
+            const data = await res.json();
+            
+            document.getElementById('repRevenueLabel').innerText = `KSH ${data.revenue.toLocaleString()}`;
+            document.getElementById('repProfitLabel').innerText = `KSH ${data.profit.toLocaleString()}`;
+            document.getElementById('repUnitsLabel').innerText = `${data.units_sold} Units`;
+            document.getElementById('repDepletedCountLabel').innerText = `${data.depleted_count} Items`;
+
+            const txtList = document.getElementById('depletedProductsTextList');
+            txtList.innerHTML = data.depleted_list.length ? '' : '🟩 No item lines are currently fully depleted.';
+            data.depleted_list.forEach(name => txtList.innerHTML += `<div>⚠️ OUT OF STOCK: ${name}</div>`);
+
+            const salesBody = document.getElementById('dailySalesReportTableBody');
+            salesBody.innerHTML = '';
+            if (!data.daily_sales_list.length) {
+                salesBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8;">No sales recorded for this range.</td></tr>';
+            } else {
+                data.daily_sales_list.forEach(s => {
+                    const time = new Date(s.created_at).toLocaleString();
+                    salesBody.innerHTML += `<tr>
+                        <td>${time}</td>
+                        <td>${s.product_name}</td>
+                        <td>${s.quantity_sold}</td>
+                        <td>${Number(s.total_price).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td style="color:#10b981; font-weight:600;">${Number(s.profit).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td>${s.sold_by}</td>
+                        <td>${s.payment_method}</td>
+                    </tr>`;
+                });
+            }
+
+            if(activeReportChartInstanceObj) activeReportChartInstanceObj.destroy();
+            const ctx = document.getElementById('topMovingItemsBarChart').getContext('2d');
+            activeReportChartInstanceObj = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.top_moving_labels,
+                    datasets: [
+                        { label: 'Units Sold', data: data.top_moving_values, backgroundColor: '#2563eb' },
+                        { label: 'Profit (KSH)', data: data.top_moving_profit, backgroundColor: '#10b981' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function printDailySalesReport() {
+            document.body.classList.add('printing-report');
+            window.print();
+            setTimeout(() => document.body.classList.remove('printing-report'), 500);
+        }
+
+        async function dispatchAICopilotCommand() {
+            const inp = document.getElementById('aiCopilotCommandInputText');
+            const prompt = inp.value.trim();
+            if(!prompt) return;
+
+            const logs = document.getElementById('aiCopilotChatLogsDisplayArea');
+            logs.innerHTML += `<p style="color:#475569;"><b>User:</b> ${prompt}</p>`;
+            inp.value = '';
+
+            const res = await fetch('/api/ai/copilot-chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt: prompt}) });
+            const data = await res.json();
+            logs.innerHTML += `<p style="color:#7c3aed; background:#f3e8ff; padding:8px; border-radius:6px;"><b>AI:</b> ${data.reply}</p>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+    </script>
+</body>
+</html>

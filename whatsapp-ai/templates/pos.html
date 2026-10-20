@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counter POS Terminal</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: #f4f6f8; color: #333; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Left Counter Screen Layout */
+        .main-panel { width: 65%; display: flex; flex-direction: column; padding: 20px; height: 100%; }
+        .search-container { margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #dfe3e8; border-radius: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); outline: none; }
+        .search-input:focus { border-color: #007ace; }
+        
+        .catalog-container { flex: 1; overflow-y: auto; background: white; border: 1px solid #dfe3e8; border-radius: 6px; padding: 20px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .product-card { border: 1px solid #e1e6eb; border-radius: 6px; padding: 15px; text-align: center; cursor: pointer; background: #fafbfc; transition: transform 0.1s; }
+        .product-card:active { transform: scale(0.97); background: #f0f4f8; }
+        .prod-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .prod-price { color: #007ace; font-weight: bold; font-size: 15px; }
+        .prod-stock { font-size: 12px; color: #6d7175; margin-top: 5px; }
+
+        /* Right Cart Sidebar Layout */
+        .cart-panel { width: 35%; background: white; border-left: 1px solid #dfe3e8; display: flex; flex-direction: column; height: 100%; }
+        .cart-header { padding: 20px; border-bottom: 1px solid #dfe3e8; font-size: 18px; font-weight: bold; background: #fafbfc; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 20px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f3f5; }
+        .cart-item-details { flex: 1; }
+        .cart-item-name { font-weight: 500; font-size: 14px; }
+        .cart-item-price { font-size: 13px; color: #6d7175; }
+        .qty-controls { display: flex; align-items: center; gap: 10px; }
+        .qty-btn { border: 1px solid #cbd5e1; background: white; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        .cart-summary { padding: 20px; border-top: 1px solid #dfe3e8; background: #fafbfc; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; }
+        .total-row { font-size: 18px; font-weight: bold; border-top: 1px dashed #cbd5e1; padding-top: 10px; color: #10b981; }
+        .checkout-btn { width: 100%; background: #008060; color: white; border: none; padding: 15px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .checkout-btn:hover { background: #006e52; }
+        .checkout-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .sync-pill { font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; display: inline-block; }
+
+        /* 58mm thermal receipt print layout — same convention as the main dashboard */
+        @media print {
+            body * { visibility: hidden; }
+            #posReceiptPrintArea, #posReceiptPrintArea * { visibility: visible; }
+            #posReceiptPrintArea { position: absolute; left: 0; top: 0; width: 58mm; font-family: monospace; font-size: 12px; line-height: 1.2; color: black; background: white; padding: 5mm; }
+        }
+    </style>
+</head>
+<body>
+    <div style="position:fixed; top:10px; right:10px; z-index:50;">
+        <span id="posSyncStatus" class="sync-pill" style="background:#fef3c7; color:#92400e;">🟡 Connecting...</span>
+    </div>
+    <div id="posReceiptPrintArea" style="display:none;"></div>
+
+
+    <div class="main-panel">
+        <div class="search-container">
+            <input type="text" id="posSearch" class="search-input" placeholder="Scan item barcode or enter product name card identifier..." autofocus autocomplete="off">
+        </div>
+        <div class="catalog-container">
+            <h3 style="margin-top: 0; color: #454f5b;">Active Store Inventory</h3>
+            <div class="product-grid" id="productGrid"></div>
+        </div>
+    </div>
+    <div class="cart-panel">
+        <div class="cart-header">Current Cart Register</div>
+        <div class="cart-items" id="cartItemsList">
+            </div>
+        <div class="cart-summary">
+            <div class="summary-row">
+                <span>Items Subtotal:</span>
+                <span id="subtotalVal">KSH 0.00</span>
+            </div>
+            <div class="summary-row total-row">
+                <span>TOTAL DUE:</span>
+                <span id="totalVal">KSH 0.00</span>
+            </div>
+            <button class="checkout-btn" onclick="executeSale()">COMPLETE CUSTOMER SALE</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. Fetch live inventory metrics from our new FastAPI endpoint
+        let liveInventoryByName = {};
+
+        async function loadLiveInventory() {
+            try {
+                const response = await fetch('/api/products');
+                if (!response.ok) return;
+                
+                const products = await response.json();
+                liveInventoryByName = Object.fromEntries(products.map(p => [p.name, p]));
+                const grid = document.getElementById('productGrid');
+                grid.innerHTML = ''; // Clear previous elements safely
+
+                if (products.length === 0) {
+                    grid.innerHTML = '<p style="color:#6d7175;">No stock entries located.</p>';
+                    return;
+                }
+
+                // Render cards dynamically using data straight from PostgreSQL
+                products.forEach(prod => {
+                    const price = prod.selling_price || prod.price;
+                    grid.innerHTML += `
+                        <div class="product-card" onclick="addCartItem('${prod.name}', ${price})">
+                            <div class="prod-title">${prod.name}</div>
+                            <div class="prod-price">KSH ${Number(price).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                            <div class="prod-stock" style="${prod.stock_count === 0 ? 'color:#ef4444; font-weight:bold;' : ''}">Available: ${prod.stock_count} units</div>
+                        </div>
+                    `;
+                });
+                renderCart(); // re-check stock violations against fresh counts
+            } catch (err) {
+                console.error("Error loading live dashboard profiles:", err);
+            }
+        }
+
+        // --- REAL-TIME SYNC BUS CLIENT ---
+        // Picks up sales made via WhatsApp or the AI copilot instantly, so
+        // stock counts on this screen never go stale between polls.
+        function connectPosSyncSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const socket = new WebSocket(`${proto}//${window.location.host}/ws/sync`);
+            const pill = document.getElementById('posSyncStatus');
+
+            socket.onopen = () => {
+                pill.innerText = '🟢 Live Synced';
+                pill.style.background = '#d1fae5';
+                pill.style.color = '#065f46';
+            };
+            socket.onmessage = () => loadLiveInventory(); // any event = refresh stock counts
+            socket.onclose = () => {
+                pill.innerText = '🟡 Reconnecting...';
+                pill.style.background = '#fef3c7';
+                pill.style.color = '#92400e';
+                setTimeout(connectPosSyncSocket, 3000);
+            };
+            socket.onerror = () => socket.close();
+        }
+
+        function printReceipt(data) {
+            const area = document.getElementById('posReceiptPrintArea');
+            let itemsLines = '';
+            data.receipt_data.forEach(i => {
+                itemsLines += `${i.name} x${i.qty}\n   @ KSH ${i.unit_price} -> KSH ${(i.unit_price * i.qty).toFixed(2)}\n`;
+            });
+            area.innerHTML = `
+================================
+     SUITEDECK STORE POS
+   Nairobi, Kenya Counter
+================================
+DATE: ${new Date().toLocaleString()}
+REF: ${data.sale_ref || 'N/A'}
+--------------------------------
+ITEMS:
+${itemsLines}
+--------------------------------
+TOTAL AMOUNT CHARGED:
+   KSH ${Number(data.total).toLocaleString(undefined, {minimumFractionDigits: 2})}
+================================
+ Thank you for shopping with us!
+================================
+            `;
+            window.print();
+        }
+
+        // Run the fetch command immediately when the interface mounts
+        window.onload = () => {
+            loadLiveInventory();
+            connectPosSyncSocket();
+        };
+        let cart = [];
+
+        // Catch the barcode scanner input actions
+        const searchInput = document.getElementById('posSearch');
+        searchInput.addEventListener('keypress', async function(e) {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (!query) return;
+
+                try {
+                    const response = await fetch(`/api/products/lookup?q=${encodeURIComponent(query)}`);
+                    if (response.ok) {
+                        const product = await response.json();
+                        addCartItem(product.name, product.price);
+                    } else {
+                        alert("Product class data not located inside inventory rows.");
+                    }
+                } catch (err) {
+                    console.error("Endpoint transaction issue:", err);
+                }
+                searchInput.value = ''; // Instantly clear input window for next fast hardware scan trigger
+            }
+        });
+
+        function addCartItem(name, price) {
+            const liveProduct = liveInventoryByName[name];
+            const existing = cart.find(item => item.name === name);
+            const currentQty = existing ? existing.qty : 0;
+
+            if (liveProduct && currentQty + 1 > liveProduct.stock_count) {
+                alert(`❌ Stock limit hit! Only ${liveProduct.stock_count} units of "${name}" available.`);
+                return;
+            }
+
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ name, price, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateQty(name, amount) {
+            const item = cart.find(item => item.name === name);
+            if (item) {
+                item.qty += amount;
+                if (item.qty <= 0) {
+                    cart = cart.filter(i => i.name !== name);
+                }
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cartItemsList');
+            list.innerHTML = '';
+            let total = 0;
+            let stockViolation = false;
+
+            cart.forEach(item => {
+                const cost = item.price * item.qty;
+                total += cost;
+                const liveProduct = liveInventoryByName[item.name];
+                if (liveProduct && item.qty > liveProduct.stock_count) stockViolation = true;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${item.name}</div>
+                            <div class="cart-item-price">KSH ${item.price.toLocaleString()}</div>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateQty('${item.name}', -1)">-</button>
+                            <span style="font-weight:bold;">${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty('${item.name}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('subtotalVal').innerText = `KSH ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('totalVal').innerText = `KSH ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+            // Real-time stock boundary enforcement: freeze checkout if the cart
+            // now exceeds what's actually available.
+            const btn = document.querySelector('.checkout-btn');
+            btn.disabled = stockViolation;
+            btn.innerText = stockViolation ? '⚠️ EXCEEDS AVAILABLE STOCK' : 'COMPLETE CUSTOMER SALE';
+        }
+
+        async function executeSale() {
+            if (cart.length === 0) {
+                alert("The transaction cart is currently completely empty.");
+                return;
+            }
+
+            const payload = {
+                items: cart.map(item => ({ name: item.name, qty: item.qty })),
+                is_debt: false,
+                payment_method: "Cash",
+                use_etr: false,
+                operator: "Counter Terminal"
+            };
+
+            try {
+                const response = await fetch('/api/sales/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    printReceipt(data);
+                    cart = [];
+                    renderCart();
+                    loadLiveInventory();
+                } else {
+                    const errData = await response.json();
+                    alert(`❌ Transaction execution issue: ${errData.detail || 'Failed processing request.'}`);
+                }
+            } catch (err) {
+                console.error("Network communication transaction issue:", err);
+                alert("❌ Critical server pipeline communication failure.");
+            }
+        }
+    </script>
+</body>
+</html>

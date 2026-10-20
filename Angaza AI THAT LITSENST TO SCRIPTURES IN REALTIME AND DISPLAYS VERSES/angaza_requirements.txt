@@ -1,0 +1,49 @@
+# Angaza - Church AI Voice Assistant
+# requirements.txt — All free/open-source alternatives
+
+# ── Core API Framework ──────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9        # File uploads
+pydantic==2.7.0
+
+# ── LLM - Groq (FREE TIER: 14,400 req/day) ─────
+groq==0.9.0
+
+# ── Embeddings - HuggingFace (FREE, local) ──────
+sentence-transformers==3.0.1   # all-MiniLM-L6-v2
+
+# ── Vector Store - FAISS (FREE, local) ──────────
+faiss-cpu==1.8.0               # Use faiss-gpu if GPU available
+
+# ── ASR Option 1: Local Whisper (FREE) ──────────
+#openai-whisper==20231117       # Local speech-to-text
+
+# ── ASR Option 2: Groq Whisper API (FREE tier) ──
+# Already included in groq package above
+
+# ── TTS Option 1: gTTS (FREE, Google) ───────────
+gTTS==2.5.1
+
+# ── TTS Option 2: Edge TTS (FREE, MS Neural) ────
+edge-tts==6.1.12               # Best free TTS quality
+
+# ── Database & Storage ──────────────────────────
+sqlalchemy==2.0.30             # ORM
+alembic==1.13.1                # DB migrations
+aiosqlite==0.20.0              # Async SQLite (dev)
+asyncpg==0.29.0                # PostgreSQL (prod)
+
+# ── Utilities ────────────────────────────────────
+python-dotenv==1.0.1           # Environment variables
+httpx==0.27.0                  # Async HTTP client
+numpy==1.26.4                  # Numerical operations
+python-jose[cryptography]      # JWT auth tokens
+passlib[bcrypt]                # Password hashing
+
+# ── Bible Data ───────────────────────────────────
+# bible-api-py               # Optional: python-bible for offline Bible
+requests==2.32.3               # For Bible API calls
+
+# ── Monitoring (optional) ────────────────────────
+# prometheus-fastapi-instrumentator==6.1.0

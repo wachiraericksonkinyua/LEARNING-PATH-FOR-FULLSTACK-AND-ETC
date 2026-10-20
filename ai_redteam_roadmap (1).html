@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Red Team & Security Engineer — Rome's Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --card: #161a22;
+    --border: #222838;
+    --accent: #00ff88;
+    --accent2: #ff3e6c;
+    --accent3: #7c6dfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --warning: #f59e0b;
+    --done-bg: #0d2a1f;
+    --skip-bg: #1a1040;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,12,16,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .logo { font-size: 1rem; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); }
+  .logo span { color: var(--muted); font-weight: 400; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn { border: none; cursor: pointer; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 0.7rem; padding: 7px 14px; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #000; font-weight: 700; }
+  .btn-primary:hover { filter: brightness(1.2); }
+  .btn-ghost { background: var(--border); color: var(--text); }
+  .btn-ghost:hover { background: #2d3650; }
+
+  /* ---- LAYOUT ---- */
+  .layout { display: flex; min-height: calc(100vh - 58px); }
+
+  /* ---- SIDEBAR ---- */
+  .sidebar {
+    width: 300px; min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    position: sticky; top: 58px;
+    height: calc(100vh - 58px);
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ---- PIE CHART ---- */
+  .chart-wrap { text-align: center; }
+  .chart-label { font-size: 0.7rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  canvas#pie { display: block; margin: 0 auto 8px; }
+  .pie-legend { display: flex; flex-direction: column; gap: 5px; font-size: 0.72rem; font-family: 'Space Mono', monospace; }
+  .pie-row { display: flex; align-items: center; gap: 7px; }
+  .pie-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ---- STATS BAR ---- */
+  .stats-bar { display: flex; flex-direction: column; gap: 8px; }
+  .stat { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+  .stat-label { color: var(--muted); font-family: 'Space Mono', monospace; }
+  .stat-val { font-weight: 700; font-family: 'Space Mono', monospace; }
+  .stat-val.green { color: var(--accent); }
+  .stat-val.red { color: var(--accent2); }
+  .stat-val.purple { color: var(--accent3); }
+
+  /* ---- PHASE NAV ---- */
+  .phase-nav-label { font-size: 0.65rem; font-family: 'Space Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .phase-nav-list { display: flex; flex-direction: column; gap: 3px; }
+  .nav-item { padding: 7px 10px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
+  .nav-item:hover { background: var(--card); border-color: var(--border); }
+  .nav-item.active { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.3); color: var(--accent); }
+  .nav-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .nav-item.phase-done .nav-dot { background: var(--accent); }
+  .nav-item.phase-skip .nav-dot { background: var(--accent3); }
+
+  /* ---- NOTES PANEL ---- */
+  .notes-section { display: flex; flex-direction: column; gap: 6px; }
+  .notes-label { font-size: 0.65rem; font-family: 'Space Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  #globalNote { background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.72rem; padding: 8px 10px; resize: vertical; width: 100%; min-height: 80px; outline: none; transition: border-color 0.2s; }
+  #globalNote:focus { border-color: var(--accent); }
+  .save-note-btn { align-self: flex-end; }
+
+  /* ---- MAIN ---- */
+  main { flex: 1; padding: 28px 24px; max-width: 860px; }
+
+  /* ---- PHASE SECTION ---- */
+  .phase { margin-bottom: 40px; }
+  .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .phase-num { font-size: 0.65rem; font-family: 'Space Mono', monospace; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 3px 7px; }
+  .phase-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+  .phase-badge { font-size: 0.65rem; font-family: 'Space Mono', monospace; padding: 3px 8px; border-radius: 100px; }
+  .badge-weeks { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .badge-skip { background: rgba(124,109,250,0.15); color: var(--accent3); }
+  .badge-done { background: rgba(0,255,136,0.15); color: var(--accent); }
+
+  /* ---- ITEM CARD ---- */
+  .item-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+  }
+  .item-card:hover { border-color: #2d3650; }
+  .item-card.done { border-color: rgba(0,255,136,0.3); background: var(--done-bg); }
+  .item-card.skip { border-color: rgba(124,109,250,0.3); background: var(--skip-bg); opacity: 0.75; }
+  .item-card.bookmarked { box-shadow: 3px 0 0 0 var(--warning) inset; }
+
+  .item-top { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; cursor: pointer; }
+  .item-check { margin-top: 2px; flex-shrink: 0; }
+  .item-check input[type=checkbox] { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all 0.2s; background: transparent; flex-shrink: 0;
+  }
+  .done .check-box { background: var(--accent); border-color: var(--accent); }
+  .check-box svg { display: none; }
+  .done .check-box svg { display: block; }
+
+  .item-body { flex: 1; min-width: 0; }
+  .item-name { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; }
+  .done .item-name { text-decoration: line-through; color: var(--muted); }
+  .item-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .item-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .tag { font-size: 0.62rem; font-family: 'Space Mono', monospace; padding: 2px 7px; border-radius: 100px; border: 1px solid var(--border); color: var(--muted); }
+  .tag.cert { border-color: rgba(0,255,136,0.4); color: var(--accent); }
+  .tag.free { border-color: rgba(245,158,11,0.4); color: var(--warning); }
+  .tag.tool { border-color: rgba(124,109,250,0.4); color: var(--accent3); }
+
+  .item-actions { display: flex; gap: 6px; align-items: center; margin-left: auto; flex-shrink: 0; }
+  .icon-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; color: var(--muted); font-size: 0.8rem; }
+  .icon-btn:hover { background: var(--surface); color: var(--text); }
+  .icon-btn.bookmarked-btn.active { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: var(--warning); }
+  .icon-btn.skip-btn.active { background: rgba(124,109,250,0.15); border-color: rgba(124,109,250,0.4); color: var(--accent3); }
+
+  /* ---- EXPANDABLE NOTE ---- */
+  .item-note-area { padding: 0 16px 14px; display: none; }
+  .item-note-area.open { display: block; }
+  .note-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.72rem; padding: 8px 10px; resize: none; outline: none; min-height: 56px; transition: border-color 0.2s; }
+  .note-input:focus { border-color: var(--accent3); }
+
+  /* ---- RESOURCE LINK ---- */
+  .item-link { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(255,255,255,0.02); border-top: 1px solid var(--border); font-size: 0.75rem; font-family: 'Space Mono', monospace; }
+  .item-link a { color: var(--accent3); text-decoration: none; }
+  .item-link a:hover { text-decoration: underline; }
+
+  /* ---- TIME ESTIMATE ---- */
+  .item-time { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-family: 'Space Mono', monospace; color: #60a5fa; background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.2); border-radius: 100px; padding: 2px 8px; margin-top: 6px; }
+  .item-time svg { flex-shrink: 0; }
+
+  /* ---- ALREADY DONE LABEL ---- */
+  .skip-label { font-size: 0.7rem; font-family: 'Space Mono', monospace; color: var(--accent3); background: rgba(124,109,250,0.1); border: 1px solid rgba(124,109,250,0.25); border-radius: 4px; padding: 2px 7px; }
+
+  /* ---- TOAST ---- */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--accent); color: #000; font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; padding: 10px 16px; border-radius: 8px; transform: translateY(60px); opacity: 0; transition: all 0.3s; z-index: 999; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ---- SCROLLBAR ---- */
+  main::-webkit-scrollbar { width: 5px; }
+  main::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Phase color accents */
+  .phase[data-phase="0"] .phase-title { color: #7c6dfa; }
+  .phase[data-phase="1"] .phase-title { color: #00bfff; }
+  .phase[data-phase="2"] .phase-title { color: #ff3e6c; }
+  .phase[data-phase="3"] .phase-title { color: #f59e0b; }
+  .phase[data-phase="4"] .phase-title { color: #00ff88; }
+  .phase[data-phase="5"] .phase-title { color: #ff80ab; }
+
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Rome's AI RedTeam Path <span>// Karatina University</span></div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="exportProgress()">⬇ Export Progress</button>
+    <button class="btn btn-primary" onclick="saveAll()">💾 Save</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="chart-wrap">
+      <div class="chart-label">Your Progress</div>
+      <canvas id="pie" width="140" height="140"></canvas>
+      <div class="pie-legend">
+        <div class="pie-row"><div class="pie-dot" style="background:#00ff88"></div><span id="leg-done">0 Done</span></div>
+        <div class="pie-row"><div class="pie-dot" style="background:#7c6dfa"></div><span id="leg-skip">0 Already Known</span></div>
+        <div class="pie-row"><div class="pie-dot" style="background:#222838"></div><span id="leg-todo">0 To Do</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-label">Completed</span><span class="stat-val green" id="s-done">0</span></div>
+      <div class="stat"><span class="stat-label">Already Known</span><span class="stat-val purple" id="s-skip">0</span></div>
+      <div class="stat"><span class="stat-label">Remaining</span><span class="stat-val red" id="s-todo">0</span></div>
+      <div class="stat"><span class="stat-label">Bookmarked</span><span class="stat-val" style="color:var(--warning)" id="s-book">0</span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="phase-nav-label">Jump to Phase</div>
+      <div class="phase-nav-list" id="navList"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="notes-section">
+      <div class="notes-label">📌 Global Notes</div>
+      <textarea id="globalNote" placeholder="Write general notes, goals, ideas..."></textarea>
+      <button class="btn btn-ghost save-note-btn" onclick="saveGlobalNote()">Save Note</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="mainContent"></main>
+</div>
+
+<div id="toast">Saved ✓</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const phases = [
+  {
+    id: "p0",
+    title: "Foundation (Already Covered ✅ Skip/Review)",
+    time: "Already done!",
+    badgeType: "done",
+    color: "#7c6dfa",
+    alreadyDone: true,
+    items: [
+      {
+        id: "i00", name: "AI & GenAI Fundamentals",
+        desc: "Cisco Networking Academy AI Fundamentals course — you already completed this. You understand how LLMs, transformers, and GenAI systems work.",
+        tags: ["cert", "free", "✅ completed"], time: "~10 hrs",
+        link: "https://www.netacad.com/courses/ai-fundamentals",
+        linkLabel: "Cisco AI Fundamentals"
+      },
+      {
+        id: "i01", name: "AI Engineer Foundations (YouTube Course)",
+        desc: "The YouTube AI Engineer course you completed. Covers building and working with AI APIs and pipelines.",
+        tags: ["free", "✅ completed"], time: "~6 hrs",
+        link: "https://youtu.be/mEsleV16qdo",
+        linkLabel: "YouTube Course"
+      },
+      {
+        id: "i02", name: "Prompt Engineering Basics",
+        desc: "Since you've used GenAI hands-on, you already understand prompting. This forms the attack surface for red teaming.",
+        tags: ["free", "✅ completed"], time: "~3 hrs",
+        link: "https://learnprompting.org",
+        linkLabel: "LearnPrompting.org (review)"
+      }
+    ]
+  },
+  {
+    id: "p1",
+    title: "Phase 1 — Cybersecurity Foundations",
+    time: "4–5 weeks",
+    badgeType: "weeks",
+    color: "#00bfff",
+    items: [
+      {
+        id: "i10", name: "Google Cybersecurity Certificate (Coursera)",
+        desc: "Free to audit on Coursera. Covers networking, Linux, threat detection, SIEM, IDS — the core vocabulary every AI security engineer needs. 8 courses. Audit for FREE, pay only if you want the certificate.",
+        tags: ["free", "cert"], time: "~3 weeks (1–2 hrs/day)",
+        link: "https://www.coursera.org/professional-certificates/google-cybersecurity",
+        linkLabel: "Coursera — Google Cybersecurity"
+      },
+      {
+        id: "i11", name: "Linux Command Line Basics",
+        desc: "AI security tools run on Linux. Learn ls, cd, grep, chmod, curl, ssh and bash scripting. Free on OverTheWire Bandit or Linux Journey.",
+        tags: ["free", "tool"], time: "~1 week (1 hr/day)",
+        link: "https://overthewire.org/wargames/bandit/",
+        linkLabel: "OverTheWire: Bandit"
+      },
+      {
+        id: "i12", name: "Python for Security (Automate the Boring Stuff)",
+        desc: "Free book/course. Python is the main language for AI red team tools like PyRIT and Garak. Focus on: file I/O, HTTP requests, APIs, and basic scripting.",
+        tags: ["free"], time: "~2 weeks (1–2 hrs/day)",
+        link: "https://automatetheboringstuff.com/",
+        linkLabel: "Automate the Boring Stuff (Free)"
+      },
+      {
+        id: "i13", name: "Networking Fundamentals",
+        desc: "TCP/IP, HTTP/HTTPS, APIs, and how data flows. Critical for understanding how AI systems communicate. Free via Professor Messer or Cisco NetAcad.",
+        tags: ["free"], time: "~1 week (1 hr/day)",
+        link: "https://www.professormesser.com/network-plus/n10-008/n10-008-video/n10-008-training-course/",
+        linkLabel: "Professor Messer (Free)"
+      }
+    ]
+  },
+  {
+    id: "p2",
+    title: "Phase 2 — AI Security Core",
+    time: "4–5 weeks",
+    badgeType: "weeks",
+    color: "#ff3e6c",
+    items: [
+      {
+        id: "i20", name: "Microsoft AI Red Teaming 101 (FREE, 6 Episodes)",
+        desc: "Official free training series from Microsoft's AI Red Team. Covers prompt injection, single-turn attacks (persona hacking, filter evasion), multi-turn attacks (Skeleton Key, Crescendo). Hands-on labs included.",
+        tags: ["free", "cert"], time: "~5 hrs total",
+        link: "https://learn.microsoft.com/en-us/security/ai-red-team/training",
+        linkLabel: "Microsoft Learn — AI Red Teaming 101"
+      },
+      {
+        id: "i21", name: "OWASP Top 10 for LLMs (2025)",
+        desc: "The global standard for AI vulnerabilities. Free to read. Covers: prompt injection, sensitive data exposure, supply chain attacks, model poisoning, data leakage, and 5 more. Read the official guide + take the free Udemy course.",
+        tags: ["free", "cert"], time: "~1 week (read + practice)",
+        link: "https://owasp.org/www-project-top-10-for-large-language-model-applications/",
+        linkLabel: "OWASP LLM Top 10"
+      },
+      {
+        id: "i22", name: "MITRE ATLAS Framework",
+        desc: "Free framework — the MITRE ATT&CK equivalent for AI attacks. Covers 14 tactic categories with real case studies. Essential knowledge for any AI security role.",
+        tags: ["free"], time: "~4 hrs (read + explore)",
+        link: "https://atlas.mitre.org/",
+        linkLabel: "MITRE ATLAS"
+      },
+      {
+        id: "i23", name: "HackAPrompt — AI Red Teaming Practice",
+        desc: "World's largest AI red teaming environment, developed with OpenAI & Hugging Face. Over 10,000 participants. Practice prompt injection and jailbreaking in a structured, legal environment. FREE.",
+        tags: ["free", "tool"], time: "~1–2 weeks (ongoing practice)",
+        link: "https://www.hackaprompt.com/",
+        linkLabel: "HackAPrompt"
+      }
+    ]
+  },
+  {
+    id: "p3",
+    title: "Phase 3 — Tools & Hands-On Labs",
+    time: "4–5 weeks",
+    badgeType: "weeks",
+    color: "#f59e0b",
+    items: [
+      {
+        id: "i30", name: "Microsoft PyRIT (Python Red Teaming Tool)",
+        desc: "Microsoft's core internal AI red teaming tool — now open source. Automates adversarial testing of LLMs. Learn to run scans, craft attack prompts, and log results. Free on GitHub.",
+        tags: ["free", "tool"], time: "~1 week (setup + experiments)",
+        link: "https://github.com/Azure/PyRIT",
+        linkLabel: "PyRIT on GitHub"
+      },
+      {
+        id: "i31", name: "NVIDIA Garak — LLM Vulnerability Scanner",
+        desc: "Called the 'Nmap for LLMs'. Probes for hallucination, data leakage, prompt injection, jailbreaks, and toxicity. Free and open source. Learn to run it against public models.",
+        tags: ["free", "tool"], time: "~4 hrs (install + run scans)",
+        link: "https://github.com/NVIDIA/garak",
+        linkLabel: "Garak on GitHub"
+      },
+      {
+        id: "i32", name: "IBM Adversarial Robustness Toolbox (ART)",
+        desc: "Free open-source library for adversarial ML attacks and defenses. Covers evasion attacks, data poisoning, model extraction, and more. Great for understanding ML security beyond LLMs.",
+        tags: ["free", "tool"], time: "~1 week (tutorials + labs)",
+        link: "https://github.com/Trusted-AI/adversarial-robustness-toolbox",
+        linkLabel: "IBM ART on GitHub"
+      },
+      {
+        id: "i33", name: "Promptfoo — LLM Testing in CI/CD",
+        desc: "Free open-source tool for LLM red teaming with CI/CD integration. Build automated test suites for AI systems. Shows employers you understand DevSecOps for AI.",
+        tags: ["free", "tool"], time: "~3 hrs (setup + write test suite)",
+        link: "https://github.com/promptfoo/promptfoo",
+        linkLabel: "Promptfoo on GitHub"
+      },
+      {
+        id: "i34", name: "TryHackMe — AI Security Rooms",
+        desc: "Free rooms on TryHackMe covering prompt injection and AI vulnerabilities. Great for structured hands-on labs with guided walkthroughs. Some rooms free, some need subscription.",
+        tags: ["free"], time: "~2–3 hrs per room",
+        link: "https://tryhackme.com/",
+        linkLabel: "TryHackMe"
+      }
+    ]
+  },
+  {
+    id: "p4",
+    title: "Phase 4 — Certifications (Free + Budget)",
+    time: "3–4 weeks",
+    badgeType: "weeks",
+    color: "#00ff88",
+    items: [
+      {
+        id: "i40", name: "LearnPrompting AI Red Teaming Certificate",
+        desc: "Purpose-built AI red teaming certification. Validated by industry experts including Microsoft PyRIT maintainer. Affordable and respected. Covers real attack scenarios in the largest AI red teaming environment worldwide.",
+        tags: ["cert"], time: "~1–2 weeks (study + exam)",
+        link: "https://learnprompting.org/certificates/ai-red-teaming-professional-certification",
+        linkLabel: "LearnPrompting AI Red Team Cert"
+      },
+      {
+        id: "i41", name: "Google Cybersecurity Certificate (Coursera Financial Aid)",
+        desc: "Apply for financial aid on Coursera — it's FREE for students who qualify (most do). Takes 1–2 weeks to approve. Covers SOC, SIEM, threat analysis. Strong employer signal.",
+        tags: ["cert", "free"], time: "~3 weeks (after audit in Phase 1)",
+        link: "https://www.coursera.org/professional-certificates/google-cybersecurity",
+        linkLabel: "Apply for Financial Aid on Coursera"
+      },
+      {
+        id: "i42", name: "ISC2 CC — Certified in Cybersecurity (FREE)",
+        desc: "ISC2 offers their entry-level cybersecurity cert completely FREE — exam, study materials, everything. Globally recognized. Strong foundation cert that pairs well with AI specialization.",
+        tags: ["cert", "free"], time: "~2 weeks (self-study + exam)",
+        link: "https://www.isc2.org/certifications/cc",
+        linkLabel: "ISC2 CC — Free Certification"
+      },
+      {
+        id: "i43", name: "Microsoft Security Fundamentals (SC-900) — Free Prep",
+        desc: "Free study path on Microsoft Learn for SC-900. The exam itself costs money, but all prep materials are free. SC-900 + AI Red Teaming knowledge = a powerful combo for job applications.",
+        tags: ["free"], time: "~1 week (free prep path)",
+        link: "https://learn.microsoft.com/en-us/credentials/certifications/security-compliance-and-identity-fundamentals/",
+        linkLabel: "Microsoft Learn SC-900"
+      }
+    ]
+  },
+  {
+    id: "p5",
+    title: "Phase 5 — Portfolio & Job Ready",
+    time: "Ongoing",
+    badgeType: "weeks",
+    color: "#ff80ab",
+    items: [
+      {
+        id: "i50", name: "Build a Public GitHub Portfolio",
+        desc: "Create repos showing: PyRIT scans you ran, OWASP vulnerability writeups, Garak reports on open-source models. Employers search GitHub. This is your CV proof of work.",
+        tags: ["tool"], time: "~1 week setup, then ongoing",
+        link: "https://github.com/",
+        linkLabel: "GitHub"
+      },
+      {
+        id: "i51", name: "AI Village CTF Competitions",
+        desc: "AI-focused Capture the Flag competitions — free to enter. Rankings and published write-ups are the fastest way to build real credibility. Better than years of experience for entry-level AI red team roles.",
+        tags: ["free"], time: "~1–3 days per CTF event",
+        link: "https://aivillage.org/",
+        linkLabel: "AI Village"
+      },
+      {
+        id: "i52", name: "Cloud Security Alliance — Agentic AI Red Teaming Guide",
+        desc: "Free publication. Deep dive into red teaming agentic AI systems — permission escalation, hallucination, memory manipulation, supply chain risks. Read and write a LinkedIn article summarizing it.",
+        tags: ["free"], time: "~3 hrs (read + write article)",
+        link: "https://cloudsecurityalliance.org/artifacts/agentic-ai-red-teaming-guide",
+        linkLabel: "CSA Agentic AI Red Teaming Guide"
+      },
+      {
+        id: "i53", name: "LinkedIn Optimization + Bug Bounty Programs",
+        desc: "Post weekly about what you're learning. Apply to AI bug bounty programs (HackerOne, Bugcrowd). Even one accepted report is worth more than most certificates for landing an AI security role.",
+        tags: [], time: "~2 hrs setup, weekly posting",
+        link: "https://hackerone.com/",
+        linkLabel: "HackerOne Bug Bounty"
+      }
+    ]
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  done: {},
+  skip: {},
+  bookmarks: {},
+  notes: {},
+  globalNote: ""
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem("rome_aisec_v2");
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem("rome_aisec_v2", JSON.stringify(state));
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const main = document.getElementById("mainContent");
+  main.innerHTML = "";
+
+  phases.forEach((phase, pi) => {
+    const sec = document.createElement("section");
+    sec.className = "phase";
+    sec.id = phase.id;
+    sec.dataset.phase = pi;
+
+    const badgeHtml = phase.badgeType === "done"
+      ? `<span class="phase-badge badge-skip">✅ ALREADY COVERED</span>`
+      : `<span class="phase-badge badge-weeks">⏱ ${phase.time}</span>`;
+
+    sec.innerHTML = `
+      <div class="phase-header">
+        <span class="phase-num">PHASE ${pi}</span>
+        <h2 class="phase-title">${phase.title}</h2>
+        ${badgeHtml}
+      </div>
+    `;
+
+    phase.items.forEach(item => {
+      const isDone = !!state.done[item.id];
+      const isSkip = !!state.skip[item.id] || (phase.alreadyDone);
+      const isBook = !!state.bookmarks[item.id];
+      const note = state.notes[item.id] || "";
+
+      const card = document.createElement("div");
+      card.className = `item-card${isDone ? " done" : ""}${isSkip && !isDone ? " skip" : ""}${isBook ? " bookmarked" : ""}`;
+      card.id = `card-${item.id}`;
+
+      const tagsHtml = item.tags.map(t => {
+        let cls = "";
+        if (t === "cert") cls = "cert";
+        else if (t === "free") cls = "free";
+        else if (t === "tool") cls = "tool";
+        return `<span class="tag ${cls}">${t}</span>`;
+      }).join("");
+
+      card.innerHTML = `
+        <div class="item-top" onclick="toggleNote('${item.id}')">
+          <div class="item-check" onclick="event.stopPropagation()">
+            <div class="check-box" onclick="toggleDone('${item.id}')">
+              <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                <path d="M1 5L4.5 8.5L11 1" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="item-body">
+            <div class="item-name">${item.name} ${isSkip && !isDone ? '<span class="skip-label">already known</span>' : ""}</div>
+            <div class="item-desc">${item.desc}</div>
+            <div class="item-tags">
+              ${item.time ? `<span class="item-time"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${item.time}</span>` : ""}
+              ${tagsHtml}
+            </div>
+          </div>
+          <div class="item-actions" onclick="event.stopPropagation()">
+            <button class="icon-btn bookmarked-btn ${isBook ? "active" : ""}" title="Bookmark" onclick="toggleBookmark('${item.id}')">🔖</button>
+            <button class="icon-btn skip-btn ${isSkip ? "active" : ""}" title="Mark as Already Known" onclick="toggleSkip('${item.id}')">⚡</button>
+            <button class="icon-btn" title="Add Note" onclick="toggleNote('${item.id}')">📝</button>
+          </div>
+        </div>
+        <div class="item-note-area ${note ? "open" : ""}" id="note-area-${item.id}">
+          <textarea class="note-input" placeholder="Add notes, links, or thoughts for this item..." onblur="saveItemNote('${item.id}', this.value)">${note}</textarea>
+        </div>
+        <div class="item-link">
+          <span style="color:var(--muted); font-size:0.65rem">🔗</span>
+          <a href="${item.link}" target="_blank" rel="noopener">${item.linkLabel}</a>
+        </div>
+      `;
+
+      sec.appendChild(card);
+    });
+
+    main.appendChild(sec);
+  });
+
+  buildNav();
+  updateStats();
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+function toggleDone(id) {
+  state.done[id] = !state.done[id];
+  if (state.done[id]) state.skip[id] = false;
+  saveState();
+  render();
+  showToast("Progress saved!");
+}
+
+function toggleBookmark(id) {
+  state.bookmarks[id] = !state.bookmarks[id];
+  saveState();
+  render();
+}
+
+function toggleSkip(id) {
+  state.skip[id] = !state.skip[id];
+  if (state.skip[id]) state.done[id] = false;
+  saveState();
+  render();
+}
+
+function toggleNote(id) {
+  const area = document.getElementById(`note-area-${id}`);
+  if (area) {
+    area.classList.toggle("open");
+    if (area.classList.contains("open")) area.querySelector("textarea").focus();
+  }
+}
+
+function saveItemNote(id, val) {
+  state.notes[id] = val;
+  saveState();
+}
+
+function saveGlobalNote() {
+  state.globalNote = document.getElementById("globalNote").value;
+  saveState();
+  showToast("Note saved!");
+}
+
+function saveAll() {
+  saveState();
+  showToast("Everything saved! 💾");
+}
+
+// ============================================================
+// STATS + PIE
+// ============================================================
+function countStats() {
+  let done = 0, skip = 0, todo = 0, book = 0, total = 0;
+  phases.forEach(ph => {
+    ph.items.forEach(it => {
+      total++;
+      if (state.done[it.id]) done++;
+      else if (state.skip[it.id] || ph.alreadyDone) skip++;
+      else todo++;
+      if (state.bookmarks[it.id]) book++;
+    });
+  });
+  return { done, skip, todo, book, total };
+}
+
+function updateStats() {
+  const { done, skip, todo, book, total } = countStats();
+  document.getElementById("s-done").textContent = done;
+  document.getElementById("s-skip").textContent = skip;
+  document.getElementById("s-todo").textContent = todo;
+  document.getElementById("s-book").textContent = book;
+  document.getElementById("leg-done").textContent = `${done} Done`;
+  document.getElementById("leg-skip").textContent = `${skip} Already Known`;
+  document.getElementById("leg-todo").textContent = `${todo} To Do`;
+  drawPie(done, skip, todo, total);
+}
+
+function drawPie(done, skip, todo, total) {
+  const canvas = document.getElementById("pie");
+  const ctx = canvas.getContext("2d");
+  const cx = 70, cy = 70, r = 58;
+  ctx.clearRect(0, 0, 140, 140);
+
+  const slices = [
+    { val: done, color: "#00ff88" },
+    { val: skip, color: "#7c6dfa" },
+    { val: todo, color: "#222838" }
+  ];
+
+  let startAngle = -Math.PI / 2;
+  slices.forEach(sl => {
+    const angle = total > 0 ? (sl.val / total) * 2 * Math.PI : (1/3) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+    ctx.closePath();
+    ctx.fillStyle = sl.color;
+    ctx.fill();
+    startAngle += angle;
+  });
+
+  // Center hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+  ctx.fillStyle = "#111318";
+  ctx.fill();
+
+  // Center text
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "bold 18px Syne, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const pct = total > 0 ? Math.round(((done + skip) / total) * 100) : 0;
+  ctx.fillText(pct + "%", cx, cy);
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function buildNav() {
+  const list = document.getElementById("navList");
+  list.innerHTML = "";
+  phases.forEach(ph => {
+    const { done, skip, todo } = phaseStats(ph);
+    let cls = "";
+    if (todo === 0 && (done + skip) > 0) cls = "phase-done";
+    else if (done > 0) cls = "phase-partial";
+
+    const div = document.createElement("div");
+    div.className = `nav-item ${cls}`;
+    div.innerHTML = `<div class="nav-dot"></div><span>${ph.title.replace(" (Already Covered ✅ Skip/Review)", " ✅")}</span>`;
+    div.onclick = () => {
+      document.getElementById(ph.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    list.appendChild(div);
+  });
+}
+
+function phaseStats(ph) {
+  let done = 0, skip = 0, todo = 0;
+  ph.items.forEach(it => {
+    if (state.done[it.id]) done++;
+    else if (state.skip[it.id] || ph.alreadyDone) skip++;
+    else todo++;
+  });
+  return { done, skip, todo };
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportProgress() {
+  const { done, skip, todo, book } = countStats();
+  let txt = `AI RED TEAM ROADMAP — ROME'S PROGRESS EXPORT\n`;
+  txt += `Generated: ${new Date().toLocaleString()}\n`;
+  txt += `============================================\n`;
+  txt += `Done: ${done} | Known: ${skip} | Remaining: ${todo} | Bookmarks: ${book}\n\n`;
+
+  phases.forEach((ph, pi) => {
+    txt += `PHASE ${pi}: ${ph.title}\n`;
+    ph.items.forEach(it => {
+      const status = state.done[it.id] ? "[✓ DONE]" : state.skip[it.id] || ph.alreadyDone ? "[⚡ KNOWN]" : "[ ]";
+      const bk = state.bookmarks[it.id] ? " 🔖" : "";
+      const tm = it.time ? ` (${it.time})` : "";
+      txt += `  ${status}${bk} ${it.name}${tm}\n`;
+      if (state.notes[it.id]) txt += `     📝 ${state.notes[it.id]}\n`;
+    });
+    txt += "\n";
+  });
+
+  if (state.globalNote) txt += `GLOBAL NOTES:\n${state.globalNote}\n`;
+
+  const blob = new Blob([txt], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "rome_ai_redteam_progress.txt";
+  a.click();
+  showToast("Progress exported!");
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+
+// Auto-mark Phase 0 items as "skip/known"
+phases[0].items.forEach(it => {
+  if (state.skip[it.id] === undefined) state.skip[it.id] = true;
+});
+saveState();
+
+render();
+
+document.getElementById("globalNote").value = state.globalNote || "";
+</script>
+</body>
+</html>
